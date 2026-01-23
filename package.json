@@ -1,0 +1,32 @@
+{
+  "name": "manage-app",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start"
+  },
+  "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
+    "@mui/icons-material": "^7.3.7",
+    "@mui/material": "^7.3.7",
+    "@mui/x-data-grid": "^8.25.0",
+    "@supabase/ssr": "^0.8.0",
+    "@supabase/supabase-js": "^2.91.0",
+    "next": "16.1.4",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "react-hook-form": "^7.71.1",
+    "react-hot-toast": "^2.6.0",
+    "recharts": "^3.6.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "babel-plugin-react-compiler": "1.0.0",
+    "typescript": "^5"
+  }
+}
