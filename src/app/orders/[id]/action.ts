@@ -43,12 +43,16 @@ export async function deleteOrderAction(orderId: string) {
 
 export type OrderStatus = "KREIRANA" | "U_OBRADI" | "POSLATA" | "ISPORUCENA" | "OTKAZANA";
 
-export async function updateOrderAction(input: { orderId: string; status: OrderStatus; kolicina: number }) {
+export async function updateOrderAction(input: { orderId: string; kolicina: number; adresa_isporuke: string }) {
   try {
-    const { orderId, status, kolicina } = input;
+    const { orderId, kolicina, adresa_isporuke } = input;
 
     if (!orderId || orderId === "undefined") return { ok: false, error: "Neispravan ID narudžbe." };
     if (!Number.isFinite(kolicina) || kolicina <= 0) return { ok: false, error: "Količina mora biti veća od 0." };
+
+    const adresa = String(adresa_isporuke ?? "").trim();
+    if (!adresa) return { ok: false, error: "Adresa isporuke je obavezna." };
+    if (adresa.length < 5) return { ok: false, error: "Adresa isporuke je prekratka." };
 
     const supabase = await createSupabaseServerClient();
     const {
@@ -56,7 +60,7 @@ export async function updateOrderAction(input: { orderId: string; status: OrderS
     } = await supabase.auth.getUser();
     if (!user) return { ok: false, error: "Niste ulogovani." };
 
-    const { error } = await supabase.from("narudzbe").update({ status, kolicina }).eq("id", orderId);
+    const { error } = await supabase.from("narudzbe").update({ kolicina, adresa_isporuke: adresa }).eq("id", orderId);
     if (error) return { ok: false, error: error.message };
 
     return { ok: true };

@@ -95,14 +95,22 @@ export default async function DashboardPage() {
     .slice(0, 8);
 
   const totals = safeLast200.map((x) => x.total);
-  const max = totals.length ? Math.max(...totals) : 1;
-  const bins = 8;
-  const step = Math.ceil(max / bins);
 
-  const histogram = Array.from({ length: bins }, (_, i) => ({
-    label: `${i * step}–${(i + 1) * step}`,
-    count: totals.filter((t) => t >= i * step && t < (i + 1) * step).length,
-  }));
+  const EDGES = [0, 100, 250, 500, 1000, 2000, 5000, 10000];
+
+  const histogram = Array.from({ length: EDGES.length }, (_, i) => {
+    const start = EDGES[i];
+    const end = EDGES[i + 1];
+
+    const label = end !== undefined ? `${start}–${end}` : `${start}+`;
+
+    const count =
+      end !== undefined
+        ? totals.filter((t) => t >= start && t < end).length
+        : totals.filter((t) => t >= start).length;
+
+    return { label, count };
+  });
 
   const fromDate = new Date();
   fromDate.setDate(fromDate.getDate() - 29);
