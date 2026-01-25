@@ -113,7 +113,7 @@ export default async function DashboardPage() {
   });
 
   const fromDate = new Date();
-  fromDate.setDate(fromDate.getDate() - 29);
+  fromDate.setDate(fromDate.getDate() - 11);
 
   const dayCounts = new Map<string, number>();
   for (let i = 0; i < 30; i++) {
