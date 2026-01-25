@@ -63,7 +63,7 @@ export async function createOrderAction(input: CreateOrderInput) {
 
     const orderId = String(inserted.id);
 
-    const opis = `Kreirana narudžba: ${proizvod.naziv}`;
+    const opis = `Kreirana narudžba`;
 
     await supabase.from("narudzbe_logovi").insert({
       narudzba_id: orderId,
