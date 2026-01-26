@@ -49,12 +49,15 @@ export default function OrderForm({
   }, [proizvodi]);
 
   const selectedProductId = watch("proizvod_id");
+  const selectedUserId = watch("korisnik_id");
 
   useEffect(() => {
-    if (!selectedProductId) return;
+    if (!selectedProductId) {
+      setValue("cijena_po_komadu", 0, { shouldValidate: true, shouldDirty: true });
+      return;
+    }
     const price = priceById.get(selectedProductId);
-    if (price === undefined) return;
-    setValue("cijena_po_komadu", price, { shouldValidate: true, shouldDirty: true });
+    setValue("cijena_po_komadu", Number(price ?? 0), { shouldValidate: true, shouldDirty: true });
   }, [selectedProductId, priceById, setValue]);
 
   const onSubmit = async (data: FormData) => {
@@ -87,14 +90,19 @@ export default function OrderForm({
       {isAdmin && (
         <TextField
           select
-          size="medium"
           label="Kupac"
-          value={watch("korisnik_id") ?? ""}
-          {...register("korisnik_id", {
-            required: "Kupac je obavezan (admin).",
-          })}
+          size="medium"
+          value={selectedUserId ?? ""}
           error={!!errors.korisnik_id}
           helperText={errors.korisnik_id?.message}
+          {...register("korisnik_id", {
+            validate: (v) => {
+              const val = String(v ?? "").trim();
+              if (!val) return "Kupac je obavezan (admin).";
+              const exists = users.some((u) => u.id === val);
+              return exists ? true : "Izabrani kupac nije validan.";
+            },
+          })}
         >
           <MenuItem value="">
             <em>Izaberi kupca</em>
@@ -111,30 +119,33 @@ export default function OrderForm({
       <TextField
         select
         label="Proizvod"
-        SelectProps={{ native: true }}
-        {...register("proizvod_id", { required: "Proizvod je obavezan" })}
+        value={selectedProductId ?? ""}
         error={!!errors.proizvod_id}
         helperText={errors.proizvod_id?.message}
+        {...register("proizvod_id", { required: "Proizvod je obavezan" })}
       >
-        <option value=""></option>
+        <MenuItem value="">
+          <em>Izaberi proizvod</em>
+        </MenuItem>
+
         {proizvodi.map((p) => (
-          <option key={p.id} value={p.id}>
+          <MenuItem key={p.id} value={p.id}>
             {p.naziv}
-          </option>
+          </MenuItem>
         ))}
       </TextField>
 
       <TextField
         label="Količina"
         type="number"
+        error={!!errors.kolicina}
+        helperText={errors.kolicina?.message}
         {...register("kolicina", {
           required: "Količina je obavezna",
           valueAsNumber: true,
           min: { value: 1, message: "Količina mora biti najmanje 1" },
           validate: (v) => (Number.isInteger(v) ? true : "Količina mora biti cijeli broj"),
         })}
-        error={!!errors.kolicina}
-        helperText={errors.kolicina?.message}
       />
 
       <TextField
@@ -146,12 +157,12 @@ export default function OrderForm({
 
       <TextField
         label="Adresa isporuke"
+        error={!!errors.adresa_isporuke}
+        helperText={errors.adresa_isporuke?.message}
         {...register("adresa_isporuke", {
           required: "Adresa isporuke je obavezna",
           minLength: { value: 5, message: "Adresa isporuke je prekratka" },
         })}
-        error={!!errors.adresa_isporuke}
-        helperText={errors.adresa_isporuke?.message}
       />
 
       <Button type="submit" variant="contained" disabled={isSubmitting}>

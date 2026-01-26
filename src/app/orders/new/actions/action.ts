@@ -18,6 +18,14 @@ export async function createOrderAction(input: CreateOrderInput) {
     } = await supabase.auth.getUser();
     if (!user) return { ok: false, error: "Niste ulogovani." };
 
+    const { data: me, error: meErr } = await supabase
+      .from("korisnici")
+      .select("id, role, ime")
+      .eq("id", user.id)
+      .single();
+
+    if (meErr || !me) return { ok: false, error: "Ne mogu učitati korisnika." };
+
     const proizvodId = String(input?.proizvod_id ?? "").trim();
     if (!proizvodId) return { ok: false, error: "Proizvod je obavezan." };
 
@@ -43,14 +51,31 @@ export async function createOrderAction(input: CreateOrderInput) {
       return { ok: false, error: "Neispravna cijena proizvoda." };
     }
 
-    const { data: me } = await supabase.from("korisnici").select("ime").eq("id", user.id).single();
-    const kupacIme = String(me?.ime ?? "(bez kupca)");
+    let targetUserId = user.id;
+    let kupacIme = String(me.ime ?? "(bez kupca)");
+
+    if (me.role === "admin") {
+      const picked = String(input?.korisnik_id ?? "").trim();
+      if (!picked) return { ok: false, error: "Kupac je obavezan (admin)." };
+
+      const { data: pickedUser, error: puErr } = await supabase
+        .from("korisnici")
+        .select("id, ime, role")
+        .eq("id", picked)
+        .single();
+
+      if (puErr || !pickedUser) return { ok: false, error: "Izabrani kupac nije pronađen." };
+      if (pickedUser.role === "admin") return { ok: false, error: "Ne možeš izabrati admina kao kupca." };
+
+      targetUserId = pickedUser.id;
+      kupacIme = String(pickedUser.ime ?? "(bez kupca)");
+    }
 
     const { data: inserted, error: insErr } = await supabase
       .from("narudzbe")
       .insert({
         proizvod_id: proizvodId,
-        korisnik_id: user.id,
+        korisnik_id: targetUserId,
         kolicina,
         cijena_po_komadu,
         adresa_isporuke: adresa,
@@ -63,15 +88,13 @@ export async function createOrderAction(input: CreateOrderInput) {
 
     const orderId = String(inserted.id);
 
-    const opis = `Kreirana narudžba`;
-
     await supabase.from("narudzbe_logovi").insert({
       narudzba_id: orderId,
       narudzba_ref: orderId,
       kupac_ref: kupacIme,
       user_id: user.id,
       akcija: "CREATED",
-      opis,
+      opis: "Kreirana narudžba",
     });
 
     return { ok: true };
