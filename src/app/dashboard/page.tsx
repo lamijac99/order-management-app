@@ -150,14 +150,14 @@ export default async function DashboardPage() {
 
   return (
     <Container
-      maxWidth={false}
+      maxWidth="xl"
       sx={{
-        py: 2,
+        py: { xs: 2, md: 3 },
         minHeight: "100vh",
         bgcolor: "#E0F2FE",
       }}
     >
-      <Typography variant="h5" sx={{ mb: 2, textAlign: "center" }}>
+      <Typography variant="h5" sx={{ mb: 2, textAlign: { xs: "left", sm: "center" } }}>
         Dashboard
       </Typography>
 
@@ -169,8 +169,12 @@ export default async function DashboardPage() {
         sx={{
           display: "grid",
           gap: 2,
-          gridTemplateColumns: { xs: "1fr", lg: "450px 1fr 260px" },
-          gridTemplateRows: "270px 270px",
+          gridTemplateColumns: {
+            xs: "1fr",
+            md: "1.2fr 1fr",
+            lg: "420px 1fr 280px",
+          },
+          gridAutoRows: "minmax(220px, auto)",
           alignItems: "stretch",
         }}
       >
@@ -178,26 +182,18 @@ export default async function DashboardPage() {
           sx={{
             p: 2,
             borderRadius: 2,
-            gridColumn: 1,
-            gridRow: "1 / 3",
             display: "flex",
             flexDirection: "column",
             bgcolor: "#eeeeee",
+            gridRow: { xs: "auto", md: "1 / span 2" },
+            minHeight: { xs: 260, md: 560 },
           }}
         >
           <Typography fontWeight={700} sx={{ mb: 1 }}>
             Aktivnosti
           </Typography>
 
-          <Box
-            sx={{
-              display: "flex",
-              flexDirection: "column",
-              gap: 1,
-              overflowY: "auto",
-              flex: 1,
-            }}
-          >
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 1, overflowY: "auto", flex: 1 }}>
             {(logs ?? []).length === 0 && (
               <Typography variant="body2" sx={{ opacity: 0.6 }}>
                 Nema aktivnosti
@@ -217,19 +213,10 @@ export default async function DashboardPage() {
                 showOrder && showOrder.length > 12 ? `${showOrder.slice(0, 4)}…${showOrder.slice(-4)}` : showOrder;
 
               return (
-                <Box
-                  key={log.id}
-                  sx={{
-                    p: 1,
-                    borderRadius: 1,
-                    bgcolor: "grey.100",
-                    fontSize: 13,
-                  }}
-                >
-                  <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 1 }}>
+                <Box key={log.id} sx={{ p: 1, borderRadius: 1, bgcolor: "grey.100", fontSize: 13 }}>
+                  <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 1, flexWrap: "wrap" }}>
                     <Chip label={chip.label} color={chip.color} size="small" sx={{ fontWeight: 700 }} />
-
-                    <Typography variant="caption" sx={{ opacity: 0.6, whiteSpace: "nowrap" }}>
+                    <Typography variant="caption" sx={{ opacity: 0.6 }}>
                       {new Date(log.created_at).toLocaleString("bs-BA")}
                     </Typography>
                   </Box>
@@ -239,28 +226,22 @@ export default async function DashboardPage() {
                   </Typography>
 
                   <Box sx={{ display: "flex", gap: 1.25, flexWrap: "wrap", mt: 0.75 }}>
-                    <Typography variant="body2" sx={{ opacity: 0.85 }}>
+                    <Typography variant="body2">
                       Narudžba:{" "}
                       {showOrder ? (
                         orderId ? (
-                          <a
-                            href={`/orders/${orderId}`}
-                            title={orderId}
-                            style={{ fontWeight: 800, textDecoration: "underline", color: "inherit" }}
-                          >
+                          <a href={`/orders/${orderId}`} style={{ fontWeight: 800, textDecoration: "underline", color: "inherit" }}>
                             {shortOrder}
                           </a>
                         ) : (
-                          <span title={showOrder} style={{ fontWeight: 800 }}>
-                            {shortOrder}
-                          </span>
+                          <b>{shortOrder}</b>
                         )
                       ) : (
-                        <span style={{ opacity: 0.6 }}>-</span>
+                        "-"
                       )}
                     </Typography>
 
-                    <Typography variant="body2" sx={{ opacity: 0.85 }}>
+                    <Typography variant="body2">
                       Kupac: <b>{kupacRef || "-"}</b>
                     </Typography>
                   </Box>
@@ -270,50 +251,28 @@ export default async function DashboardPage() {
           </Box>
         </Paper>
 
-        <Paper sx={{ p: 2, borderRadius: 2, gridColumn: 2, gridRow: 1 }}>
+        <Paper sx={{ p: 2, borderRadius: 2 }}>
           <Typography fontWeight={700} sx={{ mb: 1 }}>
             Vrijednost narudžbi
           </Typography>
           <DashboardCharts histogram={histogram} />
         </Paper>
 
-        <Paper
-          sx={{
-            p: 2,
-            borderRadius: 2,
-            gridColumn: 3,
-            gridRow: 1,
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "center",
-            alignItems: "center",
-          }}
-        >
+        <Paper sx={{ p: 2, borderRadius: 2, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
           <Typography fontWeight={700} sx={{ mb: 1, textAlign: "center" }}>
             Top proizvodi (zadnjih 200)
           </Typography>
           <TopProducts items={topProducts} />
         </Paper>
 
-        <Paper sx={{ p: 2, borderRadius: 2, gridColumn: 2, gridRow: 2 }}>
+        <Paper sx={{ p: 2, borderRadius: 2 }}>
           <Typography fontWeight={700} sx={{ mb: 1 }}>
             Narudžbe po danima
           </Typography>
           <DashboardCharts line={lineSeries} />
         </Paper>
 
-        <Paper
-          sx={{
-            p: 2,
-            borderRadius: 2,
-            gridColumn: 3,
-            gridRow: 2,
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "center",
-            alignItems: "center",
-          }}
-        >
+        <Paper sx={{ p: 2, borderRadius: 2, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
           <Typography fontWeight={700} sx={{ mb: 1, textAlign: "center" }}>
             Sažetak (30 dana)
           </Typography>
