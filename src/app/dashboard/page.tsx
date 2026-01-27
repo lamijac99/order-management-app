@@ -97,13 +97,11 @@ export default async function DashboardPage() {
   const totals = safeLast200.map((x) => x.total);
 
   const EDGES = [0, 100, 250, 500, 1000, 2000, 5000, 10000];
-
   const histogram = Array.from({ length: EDGES.length }, (_, i) => {
     const start = EDGES[i];
     const end = EDGES[i + 1];
 
     const label = end !== undefined ? `${start}–${end}` : `${start}+`;
-
     const count =
       end !== undefined
         ? totals.filter((t) => t >= start && t < end).length
@@ -113,7 +111,7 @@ export default async function DashboardPage() {
   });
 
   const fromDate = new Date();
-  fromDate.setDate(fromDate.getDate() - 11);
+  fromDate.setDate(fromDate.getDate() - 29);
 
   const dayCounts = new Map<string, number>();
   for (let i = 0; i < 30; i++) {
@@ -150,18 +148,19 @@ export default async function DashboardPage() {
 
   return (
     <Container
-      maxWidth="xl"
+      maxWidth={false}
       sx={{
         py: { xs: 2, md: 3 },
         minHeight: "100vh",
         bgcolor: "#E0F2FE",
+        overflowX: "hidden",
       }}
     >
       <Typography variant="h5" sx={{ mb: 2, textAlign: { xs: "left", sm: "center" } }}>
         Dashboard
       </Typography>
 
-      <Box sx={{ mb: 2 }}>
+      <Box sx={{ mb: 2, minWidth: 0 }}>
         <StatusCards totalAll={totalAll} countsByStatus={countsByStatus} />
       </Box>
 
@@ -176,6 +175,8 @@ export default async function DashboardPage() {
           },
           gridAutoRows: "minmax(220px, auto)",
           alignItems: "stretch",
+          maxWidth: "100%",
+          minWidth: 0,
         }}
       >
         <Paper
@@ -187,13 +188,15 @@ export default async function DashboardPage() {
             bgcolor: "#eeeeee",
             gridRow: { xs: "auto", md: "1 / span 2" },
             minHeight: { xs: 260, md: 560 },
+            minWidth: 0,
+            overflow: "hidden",
           }}
         >
           <Typography fontWeight={700} sx={{ mb: 1 }}>
             Aktivnosti
           </Typography>
 
-          <Box sx={{ display: "flex", flexDirection: "column", gap: 1, overflowY: "auto", flex: 1 }}>
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 1, overflowY: "auto", flex: 1, minWidth: 0 }}>
             {(logs ?? []).length === 0 && (
               <Typography variant="body2" sx={{ opacity: 0.6 }}>
                 Nema aktivnosti
@@ -213,24 +216,36 @@ export default async function DashboardPage() {
                 showOrder && showOrder.length > 12 ? `${showOrder.slice(0, 4)}…${showOrder.slice(-4)}` : showOrder;
 
               return (
-                <Box key={log.id} sx={{ p: 1, borderRadius: 1, bgcolor: "grey.100", fontSize: 13 }}>
-                  <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 1, flexWrap: "wrap" }}>
+                <Box key={log.id} sx={{ p: 1, borderRadius: 1, bgcolor: "grey.100", fontSize: 13, minWidth: 0 }}>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      gap: 1,
+                      flexWrap: "wrap",
+                      minWidth: 0,
+                    }}
+                  >
                     <Chip label={chip.label} color={chip.color} size="small" sx={{ fontWeight: 700 }} />
                     <Typography variant="caption" sx={{ opacity: 0.6 }}>
                       {new Date(log.created_at).toLocaleString("bs-BA")}
                     </Typography>
                   </Box>
 
-                  <Typography variant="body2" sx={{ mt: 0.75 }}>
+                  <Typography variant="body2" sx={{ mt: 0.75, overflowWrap: "anywhere" }}>
                     {log.opis}
                   </Typography>
 
-                  <Box sx={{ display: "flex", gap: 1.25, flexWrap: "wrap", mt: 0.75 }}>
-                    <Typography variant="body2">
+                  <Box sx={{ display: "flex", gap: 1.25, flexWrap: "wrap", mt: 0.75, minWidth: 0 }}>
+                    <Typography variant="body2" sx={{ overflowWrap: "anywhere" }}>
                       Narudžba:{" "}
                       {showOrder ? (
                         orderId ? (
-                          <a href={`/orders/${orderId}`} style={{ fontWeight: 800, textDecoration: "underline", color: "inherit" }}>
+                          <a
+                            href={`/orders/${orderId}`}
+                            style={{ fontWeight: 800, textDecoration: "underline", color: "inherit" }}
+                          >
                             {shortOrder}
                           </a>
                         ) : (
@@ -241,7 +256,7 @@ export default async function DashboardPage() {
                       )}
                     </Typography>
 
-                    <Typography variant="body2">
+                    <Typography variant="body2" sx={{ overflowWrap: "anywhere" }}>
                       Kupac: <b>{kupacRef || "-"}</b>
                     </Typography>
                   </Box>
@@ -251,32 +266,60 @@ export default async function DashboardPage() {
           </Box>
         </Paper>
 
-        <Paper sx={{ p: 2, borderRadius: 2 }}>
+        <Paper sx={{ p: 2, borderRadius: 2, minWidth: 0, overflow: "hidden" }}>
           <Typography fontWeight={700} sx={{ mb: 1 }}>
             Vrijednost narudžbi
           </Typography>
-          <DashboardCharts histogram={histogram} />
+          <Box sx={{ width: "100%", minWidth: 0, overflow: "hidden" }}>
+            <DashboardCharts histogram={histogram} />
+          </Box>
         </Paper>
 
-        <Paper sx={{ p: 2, borderRadius: 2, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
+        <Paper
+          sx={{
+            p: 2,
+            borderRadius: 2,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            minWidth: 0,
+            overflow: "hidden",
+          }}
+        >
           <Typography fontWeight={700} sx={{ mb: 1, textAlign: "center" }}>
             Top proizvodi (zadnjih 200)
           </Typography>
-          <TopProducts items={topProducts} />
+          <Box sx={{ width: "100%", minWidth: 0, overflow: "hidden" }}>
+            <TopProducts items={topProducts} />
+          </Box>
         </Paper>
 
-        <Paper sx={{ p: 2, borderRadius: 2 }}>
+        <Paper sx={{ p: 2, borderRadius: 2, minWidth: 0, overflow: "hidden" }}>
           <Typography fontWeight={700} sx={{ mb: 1 }}>
             Narudžbe po danima
           </Typography>
-          <DashboardCharts line={lineSeries} />
+          <Box sx={{ width: "100%", minWidth: 0, overflow: "hidden" }}>
+            <DashboardCharts line={lineSeries} />
+          </Box>
         </Paper>
 
-        <Paper sx={{ p: 2, borderRadius: 2, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
+        <Paper
+          sx={{
+            p: 2,
+            borderRadius: 2,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            minWidth: 0,
+            overflow: "hidden",
+          }}
+        >
           <Typography fontWeight={700} sx={{ mb: 1, textAlign: "center" }}>
             Sažetak (30 dana)
           </Typography>
-          <Box sx={{ display: "grid", gap: 0.5, width: "100%" }}>
+          <Box sx={{ display: "grid", gap: 0.5, width: "100%", minWidth: 0 }}>
             <Typography sx={{ textAlign: "center" }}>
               Ukupno: <b>{formatKM(totalValue30)}</b>
             </Typography>
