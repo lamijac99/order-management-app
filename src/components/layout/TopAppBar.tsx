@@ -16,11 +16,11 @@ import Divider from "@mui/material/Divider";
 import useMediaQuery from "@mui/material/useMediaQuery";
 import { useTheme } from "@mui/material/styles";
 import MenuIcon from "@mui/icons-material/Menu";
-import AddIcon from "@mui/icons-material/Add";
 import DashboardIcon from "@mui/icons-material/Dashboard";
 import ListAltIcon from "@mui/icons-material/ListAlt";
 import PeopleIcon from "@mui/icons-material/People";
 import ReceiptLongIcon from "@mui/icons-material/ReceiptLong";
+import InventoryIcon from "@mui/icons-material/Inventory";
 import LoginIcon from "@mui/icons-material/Login";
 import LogoutIcon from "@mui/icons-material/Logout";
 import PersonAddAltIcon from "@mui/icons-material/PersonAddAlt";
@@ -96,11 +96,10 @@ export default function TopAppBar() {
 
     return [
       { label: "Narudžbe", href: "/orders", icon: <ReceiptLongIcon /> },
-      { label: "Nova narudžba", href: "/orders/new", icon: <AddIcon /> },
-
       { label: "Dashboard", href: "/dashboard", icon: <DashboardIcon />, adminOnly: true },
       { label: "Logovi", href: "/logs", icon: <ListAltIcon />, adminOnly: true },
       { label: "Korisnici", href: "/users", icon: <PeopleIcon />, adminOnly: true },
+      { label: "Proizvodi", href: "/products", icon: <InventoryIcon />, adminOnly: true },
     ];
   }, [session]);
 
@@ -155,25 +154,14 @@ export default function TopAppBar() {
                     <Button color="inherit" onClick={() => router.push("/users")}>
                       Korisnici
                     </Button>
+                    <Button color="inherit" onClick={() => router.push("/products")}>
+                      Proizvodi
+                    </Button>
                   </>
                 )}
 
                 <Button color="inherit" onClick={() => router.push("/orders")}>
                   Narudžbe
-                </Button>
-
-                <Button
-                  variant="outlined"
-                  color="inherit"
-                  startIcon={<AddIcon />}
-                  onClick={() => router.push("/orders/new")}
-                  sx={{
-                    borderColor: "rgba(255,255,255,0.6)",
-                    "&:hover": { borderColor: "rgba(255,255,255,0.9)" },
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  Nova narudžba
                 </Button>
               </>
             )}
@@ -195,16 +183,6 @@ export default function TopAppBar() {
           </Box>
         )}
 
-        {/* Right: mobile quick action */}
-        {isMobile && session && (
-          <IconButton
-            color="inherit"
-            onClick={() => router.push("/orders/new")}
-            aria-label="Nova narudžba"
-          >
-            <AddIcon />
-          </IconButton>
-        )}
 
         {/* Mobile drawer */}
         <Drawer

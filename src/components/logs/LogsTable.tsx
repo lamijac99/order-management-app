@@ -9,13 +9,13 @@ import { useMemo } from "react";
 import { useRouter } from "next/navigation";
 import type { LogRow } from "@/app/logs/page";
 
-function actionChip(akcija: string) {
+function actionColors(akcija: string) {
   const a = String(akcija ?? "").toUpperCase();
-  if (a.includes("DELETE") || a.includes("OBRIS")) return { label: akcija, color: "error" as const };
+  if (a.includes("DELETE") || a.includes("OBRIS")) return { label: akcija, bg: "#f44336", color: "#f44336" };
   if (a.includes("STATUS") || a.includes("UPDATE") || a.includes("EDIT") || a.includes("IZMIJ"))
-    return { label: akcija, color: "warning" as const };
-  if (a.includes("CREATE") || a.includes("KREIR")) return { label: akcija, color: "success" as const };
-  return { label: akcija, color: "default" as const };
+    return { label: akcija, bg: "#ff9800", color: "#ff9800" };
+  if (a.includes("CREATE") || a.includes("KREIR")) return { label: akcija, bg: "#4caf50", color: "#4caf50" };
+  return { label: akcija, bg: "#9e9e9e", color: "#9e9e9e" };
 }
 
 export default function LogsTable({ rows }: { rows: LogRow[] }) {
@@ -36,8 +36,24 @@ export default function LogsTable({ rows }: { rows: LogRow[] }) {
         sortable: true,
         renderCell: (params) => {
           const a = String(params.value ?? "");
-          const c = actionChip(a);
-          return <Chip label={c.label} color={c.color} size="small" sx={{ fontWeight: 700 }} />;
+          const c = actionColors(a);
+          return (
+            <Chip
+            label={c.label}
+            size="small"
+            sx={{
+              fontWeight: 700,
+              width: 150,
+              justifyContent: "center",
+              bgcolor: `${c.bg}55`,
+              color: c.color,
+              "& .MuiChip-label": {
+                color: c.color,
+                opacity: 1,
+              },
+            }}
+          />
+          );
         },
       },
       {

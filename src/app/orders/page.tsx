@@ -22,9 +22,8 @@ export type OrderRow = {
   adresa_isporuke: string;
 };
 
-type SortKey = "datum_desc" | "datum_asc" | "ukupno_desc" | "ukupno_asc" | "kupac_asc" | "kupac_desc";
-
-const PAGE_SIZE = 5;
+const DEFAULT_PAGE_SIZE = 10;
+const ALLOWED_PAGE_SIZES = new Set([10, 20, 50, 100]);
 
 function parseStatus(v: unknown): OrderStatus | "ALL" {
   const s = String(v ?? "ALL");
@@ -33,19 +32,20 @@ function parseStatus(v: unknown): OrderStatus | "ALL" {
   return "ALL";
 }
 
-function parseSort(v: unknown): SortKey {
-  const s = String(v ?? "datum_desc") as SortKey;
-  const allowed: SortKey[] = ["datum_desc", "datum_asc", "ukupno_desc", "ukupno_asc", "kupac_asc", "kupac_desc"];
-  return allowed.includes(s) ? s : "datum_desc";
-}
-
 function parsePage(v: unknown): number {
   const n = Number(Array.isArray(v) ? v[0] : v);
   if (!Number.isFinite(n) || n < 1) return 1;
   return Math.floor(n);
 }
 
-function baseSelect(innerKorisnici: boolean) {
+function parsePageSize(v: unknown): number {
+  const n = Number(Array.isArray(v) ? v[0] : v);
+  if (!Number.isFinite(n)) return DEFAULT_PAGE_SIZE;
+  const nn = Math.floor(n);
+  return ALLOWED_PAGE_SIZES.has(nn) ? nn : DEFAULT_PAGE_SIZE;
+}
+
+function baseSelect() {
   return `
     id,
     kolicina,
@@ -54,15 +54,15 @@ function baseSelect(innerKorisnici: boolean) {
     datum_kreiranja,
     adresa_isporuke,
     proizvodi ( naziv ),
-    ${innerKorisnici ? "korisnici!inner ( ime )" : "korisnici ( ime )"}
+    korisnici ( ime )
   `;
 }
 
 async function getOrders(args: {
   status: OrderStatus | "ALL";
   q: string;
-  sort: SortKey;
   page: number;
+  pageSize: number;
 }): Promise<{ rows: OrderRow[]; total: number; isAdmin: boolean }> {
   const supabase = await createSupabaseServerClient();
 
@@ -71,51 +71,47 @@ async function getOrders(args: {
   } = await supabase.auth.getUser();
   if (!user) redirect("/auth/login");
 
-  const { data: me, error: meErr } = await supabase.from("korisnici").select("role").eq("id", user.id).single();
-
-  if (meErr) console.error("Role fetch error:", meErr.message);
-
+  const { data: me } = await supabase.from("korisnici").select("role").eq("id", user.id).single();
   const isAdmin = me?.role === "admin";
 
-  const qTrim = isAdmin ? args.q.trim() : "";
-  const useInner = Boolean(qTrim);
-
-  let query = supabase.from("narudzbe").select(baseSelect(useInner), { count: "exact" });
+  let query = supabase.from("narudzbe").select(baseSelect(), { count: "exact" });
 
   if (!isAdmin) {
     query = query.eq("korisnik_id", user.id);
   }
 
-  if (args.status !== "ALL") query = query.eq("status", args.status);
-
-  if (qTrim) query = query.ilike("korisnici.ime", `%${qTrim}%`);
-
-  const sortKey =
-    !isAdmin && (args.sort === "kupac_asc" || args.sort === "kupac_desc") ? "datum_desc" : args.sort;
-
-  switch (sortKey) {
-    case "datum_desc":
-      query = query.order("datum_kreiranja", { ascending: false });
-      break;
-    case "datum_asc":
-      query = query.order("datum_kreiranja", { ascending: true });
-      break;
-    case "kupac_asc":
-      query = query.order("korisnici(ime)", { ascending: true });
-      break;
-    case "kupac_desc":
-      query = query.order("korisnici(ime)", { ascending: false });
-      break;
-    case "ukupno_desc":
-      query = query.order("cijena_po_komadu", { ascending: false }).order("kolicina", { ascending: false });
-      break;
-    case "ukupno_asc":
-      query = query.order("cijena_po_komadu", { ascending: true }).order("kolicina", { ascending: true });
-      break;
+  if (args.status !== "ALL") {
+    query = query.eq("status", args.status);
   }
 
-  const from = (args.page - 1) * PAGE_SIZE;
-  const to = from + PAGE_SIZE - 1;
+  const qTrim = isAdmin ? args.q.trim() : "";
+  const qEsc = qTrim.replace(/[(),]/g, "");
+
+  if (qEsc) {
+    const supabase2 = supabase;
+    const [usersRes, productsRes] = await Promise.all([
+      supabase2.from("korisnici").select("id").ilike("ime", `%${qEsc}%`).limit(50),
+      supabase2.from("proizvodi").select("id").ilike("naziv", `%${qEsc}%`).limit(50),
+    ]);
+
+    const userIds = (usersRes.data ?? []).map((x: any) => x.id);
+    const productIds = (productsRes.data ?? []).map((x: any) => x.id);
+
+    const orParts: string[] = [`adresa_isporuke.ilike.*${qEsc}*`];
+
+  if (userIds.length) {
+    orParts.push(`korisnik_id.in.(${userIds.join(",")})`);
+  }
+  if (productIds.length) {
+    orParts.push(`proizvod_id.in.(${productIds.join(",")})`);
+  }
+
+  query = query.or(orParts.join(","));
+}
+  query = query.order("datum_kreiranja", { ascending: false });
+
+  const from = (args.page - 1) * args.pageSize;
+  const to = from + args.pageSize - 1;
   query = query.range(from, to);
 
   const { data, error, count } = await query;
@@ -153,17 +149,17 @@ export default async function OrdersPage({
 
   const status = parseStatus(sp.status);
   const q = String(sp.q ?? "");
-  const sort = parseSort(sp.sort);
   const page = parsePage(sp.page);
+  const pageSize = parsePageSize(sp.pageSize);
 
-  const { rows: orders, total, isAdmin } = await getOrders({ status, q, sort, page });
-  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const { rows: orders, total, isAdmin } = await getOrders({ status, q, page, pageSize });
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
       <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
         <Box sx={{ width: "100%", maxWidth: 1200, mb: 2 }}>
-          <OrdersFilters status={status} q={q} sort={sort} showCustomerSearch={isAdmin} />
+          <OrdersFilters status={status} q={q} showCustomerSearch={isAdmin} />
         </Box>
 
         <Box sx={{ width: "100%", maxWidth: 1200 }}>
@@ -171,7 +167,7 @@ export default async function OrdersPage({
         </Box>
 
         <Box sx={{ width: "100%", maxWidth: 1200, display: "flex", justifyContent: "center", mt: 1 }}>
-          <OrdersPagination page={page} totalPages={totalPages} />
+          <OrdersPagination page={page} totalPages={totalPages} pageSize={pageSize} />
         </Box>
       </Box>
 

@@ -8,17 +8,13 @@ import MenuItem from "@mui/material/MenuItem";
 import Button from "@mui/material/Button";
 import type { OrderStatus } from "@/app/orders/page";
 
-type SortKey = "datum_desc" | "datum_asc" | "ukupno_desc" | "ukupno_asc" | "kupac_asc" | "kupac_desc";
-
 export default function OrdersFilters({
   status,
   q,
-  sort,
   showCustomerSearch = true,
 }: {
   status: OrderStatus | "ALL";
   q: string;
-  sort: SortKey;
   showCustomerSearch?: boolean;
 }) {
   const router = useRouter();
@@ -26,13 +22,11 @@ export default function OrdersFilters({
 
   const [localStatus, setLocalStatus] = useState<OrderStatus | "ALL">(status);
   const [localQ, setLocalQ] = useState(q);
-  const [localSort, setLocalSort] = useState<SortKey>(sort);
 
   const baseParams = useMemo(() => {
     const p = new URLSearchParams(sp.toString());
     p.delete("status");
     p.delete("q");
-    p.delete("sort");
     p.delete("page");
     return p;
   }, [sp]);
@@ -44,13 +38,6 @@ export default function OrdersFilters({
 
     if (showCustomerSearch && localQ.trim()) p.set("q", localQ.trim());
 
-    const safeSort =
-      !showCustomerSearch && (localSort === "kupac_asc" || localSort === "kupac_desc")
-        ? "datum_desc"
-        : localSort;
-
-    if (safeSort) p.set("sort", safeSort);
-
     p.set("page", "1");
     router.push(`/orders?${p.toString()}`);
   };
@@ -58,7 +45,6 @@ export default function OrdersFilters({
   const reset = () => {
     setLocalStatus("ALL");
     setLocalQ("");
-    setLocalSort("datum_desc");
     router.push("/orders");
   };
 
@@ -83,31 +69,13 @@ export default function OrdersFilters({
       {showCustomerSearch && (
         <TextField
           size="small"
-          label="Pretraga kupca"
+          label="Pretraga"
           value={localQ}
           onChange={(e) => setLocalQ(e.target.value)}
-          placeholder="npr. Marko"
-          sx={{ minWidth: 240, flexGrow: 1 }}
+          placeholder="kupac, adresa ili proizvod"
+          sx={{ minWidth: 280, flexGrow: 1 }}
         />
       )}
-
-      <TextField
-        select
-        size="small"
-        label="Sort"
-        value={localSort}
-        onChange={(e) => setLocalSort(e.target.value as SortKey)}
-        sx={{ minWidth: 200 }}
-      >
-        <MenuItem value="datum_desc">Datum (najnovije)</MenuItem>
-        <MenuItem value="datum_asc">Datum (najstarije)</MenuItem>
-
-        {showCustomerSearch ? <MenuItem value="kupac_asc">Kupac (A–Z)</MenuItem> : null}
-        {showCustomerSearch ? <MenuItem value="kupac_desc">Kupac (Z–A)</MenuItem> : null}
-
-        <MenuItem value="ukupno_desc">Ukupno (veće)</MenuItem>
-        <MenuItem value="ukupno_asc">Ukupno (manje)</MenuItem>
-      </TextField>
 
       <Button variant="contained" onClick={apply}>
         Primijeni

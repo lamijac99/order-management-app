@@ -33,6 +33,20 @@ function actionChip(akcija: string) {
   return { label: akcija, color: "default" as const };
 }
 
+
+function chipStyle(color?: "error" | "warning" | "success" | "default") {
+  switch (color) {
+    case "error":
+      return { bgcolor: "rgba(211,47,47,0.2)", color: "error.main" };
+    case "warning":
+      return { bgcolor: "rgba(237,108,2,0.2)", color: "warning.main" };
+    case "success":
+      return { bgcolor: "rgba(46,125,50,0.2)", color: "success.main" };
+    default:
+      return { bgcolor: "rgba(0,0,0,0.08)", color: "text.primary" };
+  }
+}
+
 export default async function DashboardPage() {
   const supabase = await createSupabaseServerClient();
 
@@ -227,7 +241,16 @@ export default async function DashboardPage() {
                       minWidth: 0,
                     }}
                   >
-                    <Chip label={chip.label} color={chip.color} size="small" sx={{ fontWeight: 700 }} />
+                    <Chip
+                      label={chip.label}
+                      size="small"
+                      sx={{
+                        fontWeight: 700,
+                        width: 150,
+                        justifyContent: "center",
+                        ...chipStyle(chip.color),
+                      }}
+                    />
                     <Typography variant="caption" sx={{ opacity: 0.6 }}>
                       {new Date(log.created_at).toLocaleString("bs-BA")}
                     </Typography>

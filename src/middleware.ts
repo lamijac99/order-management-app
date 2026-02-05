@@ -33,9 +33,11 @@ export async function middleware(request: NextRequest) {
   const isOrders = pathname.startsWith("/orders");
   const isDashboard = pathname.startsWith("/dashboard");
   const isLogs = pathname.startsWith("/logs");
+  const isProducts = pathname.startsWith("/products");
+  const isUsers = pathname.startsWith("/users");
   const isAuth = pathname.startsWith("/auth");
 
-  if (!user && (isOrders || isDashboard || isLogs)) {
+  if (!user && (isOrders || isDashboard || isLogs || isProducts || isUsers)) {
     const url = request.nextUrl.clone();
     url.pathname = "/auth/login";
     return NextResponse.redirect(url);
@@ -47,7 +49,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  if (user && (isDashboard || isLogs)) {
+  if (user && (isDashboard || isLogs || isProducts || isUsers)) {
     const { data: me, error } = await supabase
       .from("korisnici")
       .select("role")
@@ -67,5 +69,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/orders/:path*", "/dashboard/:path*", "/logs/:path*", "/auth/:path*"],
+  matcher: ["/orders/:path*", "/dashboard/:path*", "/logs/:path*", "/products/:path*", "/users/:path*", "/auth/:path*"],
 };

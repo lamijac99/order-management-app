@@ -3,7 +3,7 @@
 import { useEffect, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import toast from "react-hot-toast";
-import { Box, Button, TextField, Typography, MenuItem } from "@mui/material";
+import { Box, Button, TextField, MenuItem } from "@mui/material";
 import { createOrderAction } from "@/app/orders/new/actions/action";
 
 type Proizvod = { id: string; naziv: string; cijena: number };
@@ -21,16 +21,19 @@ export default function OrderForm({
   proizvodi,
   isAdmin,
   users,
+  onSuccess,
 }: {
   proizvodi: Proizvod[];
   isAdmin: boolean;
   users: UserOption[];
+  onSuccess?: () => void;
 }) {
   const {
     register,
     handleSubmit,
     setValue,
     watch,
+    reset,
     formState: { errors, isSubmitting },
   } = useForm<FormData>({
     defaultValues: {
@@ -74,19 +77,24 @@ export default function OrderForm({
     }
 
     toast.success("Narudžba je uspješno kreirana!");
-    setTimeout(() => {
-      window.location.href = "/orders";
-    }, 600);
+    reset();
+    if (onSuccess) {
+      setTimeout(() => {
+        onSuccess();
+      }, 300);
+    } else {
+      setTimeout(() => {
+        window.location.href = "/orders";
+      }, 600);
+    }
   };
 
   return (
     <Box
       component="form"
       onSubmit={handleSubmit(onSubmit)}
-      sx={{ maxWidth: 520, mx: "auto", display: "grid", gap: 2 }}
+      sx={{ display: "grid", gap: 2, mt: 1 }}
     >
-      <Typography variant="h5">Nova narudžba</Typography>
-
       {isAdmin && (
         <TextField
           select
@@ -151,7 +159,7 @@ export default function OrderForm({
       <TextField
         label="Cijena po komadu"
         type="number"
-        InputProps={{ readOnly: true }}
+        disabled
         {...register("cijena_po_komadu", { valueAsNumber: true })}
       />
 
