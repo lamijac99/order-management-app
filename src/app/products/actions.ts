@@ -1,5 +1,6 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export async function createProductAction(input: { naziv: string; cijena: number }) {
@@ -27,6 +28,7 @@ export async function createProductAction(input: { naziv: string; cijena: number
 
     if (error) return { ok: false, error: error.message || "Greška pri kreiranju proizvoda." };
 
+    revalidatePath("/products");
     return { ok: true, productId: data.id };
   } catch (e: any) {
     return { ok: false, error: e?.message || "Greška na serveru." };
@@ -56,6 +58,7 @@ export async function updateProductAction(input: { productId: string; naziv: str
 
     if (error) return { ok: false, error: error.message || "Greška pri ažuriranju proizvoda." };
 
+    revalidatePath("/products");
     return { ok: true };
   } catch (e: any) {
     return { ok: false, error: e?.message || "Greška na serveru." };
@@ -84,9 +87,9 @@ export async function deleteProductAction(productId: string) {
     const { error } = await supabase.from("proizvodi").delete().eq("id", id);
     if (error) return { ok: false, error: error.message || "Greška pri brisanju proizvoda." };
 
+    revalidatePath("/products");
     return { ok: true };
   } catch (e: any) {
     return { ok: false, error: e?.message || "Greška na serveru." };
   }
 }
-

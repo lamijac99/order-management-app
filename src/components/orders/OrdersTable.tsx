@@ -1,6 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import * as React from "react";
+import { useRouter } from "next/navigation";
+
 import Paper from "@mui/material/Paper";
 import Box from "@mui/material/Box";
 import Select from "@mui/material/Select";
@@ -12,15 +14,17 @@ import DialogActions from "@mui/material/DialogActions";
 import Button from "@mui/material/Button";
 import Snackbar from "@mui/material/Snackbar";
 import Alert from "@mui/material/Alert";
-import Link from "@mui/material/Link";
 import IconButton from "@mui/material/IconButton";
 import Tooltip from "@mui/material/Tooltip";
 import TextField from "@mui/material/TextField";
-import { DataGrid, GridColDef } from "@mui/x-data-grid";
-import type { OrderRow, OrderStatus } from "@/app/orders/page";
+
+import { DataGrid, type GridColDef } from "@mui/x-data-grid";
 import NextLink from "next/link";
+
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import DeleteOutlineOutlinedIcon from "@mui/icons-material/DeleteOutlineOutlined";
+
+import type { OrderRow, OrderStatus } from "@/app/orders/page";
 import { updateOrderAction, deleteOrderAction } from "@/app/orders/[id]/action";
 
 const STATUS_OPTIONS: OrderStatus[] = ["KREIRANA", "U_OBRADI", "POSLATA", "ISPORUCENA", "OTKAZANA"];
@@ -67,28 +71,77 @@ function StatusBadge({ status }: { status: OrderStatus }) {
   );
 }
 
+function formatKM(value: unknown) {
+  const n = Number(value ?? 0);
+  return `${n.toLocaleString("bs-BA", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} KM`;
+}
+
 export default function OrdersTable({ rows, isAdmin }: { rows: OrderRow[]; isAdmin: boolean }) {
-  const [localRows, setLocalRows] = useState<OrderRow[]>(rows);
-  useEffect(() => setLocalRows(rows), [rows]);
+  const router = useRouter();
 
-  const [confirmOpen, setConfirmOpen] = useState(false);
-  const [pending, setPending] = useState<{ id: string; from: OrderStatus; to: OrderStatus } | null>(null);
-  const [toast, setToast] = useState<{ type: "success" | "error"; msg: string } | null>(null);
+  const mountedRef = React.useRef(false);
+  const [hydrated, setHydrated] = React.useState(false);
 
-  const [deleteOpen, setDeleteOpen] = useState(false);
-  const [deleteId, setDeleteId] = useState<string | null>(null);
+  React.useEffect(() => {
+    mountedRef.current = true;
+    setHydrated(true);
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
-  const [editOpen, setEditOpen] = useState(false);
-  const [editOrder, setEditOrder] = useState<{ id: string; kolicina: number; adresa: string } | null>(null);
-  const [editKolicina, setEditKolicina] = useState(0);
-  const [editAdresa, setEditAdresa] = useState("");
-  const [editLoading, setEditLoading] = useState(false);
+  const [localRows, setLocalRows] = React.useState<OrderRow[]>(rows);
+  React.useEffect(() => setLocalRows(rows), [rows]);
 
-  const columns: GridColDef<OrderRow>[] = useMemo(() => {
+  const [busy, setBusy] = React.useState(false);
+  const [toast, setToast] = React.useState<{ type: "success" | "error"; msg: string } | null>(null);
+
+  const safe = {
+    setBusy: (v: boolean) => mountedRef.current && setBusy(v),
+    setToast: (v: { type: "success" | "error"; msg: string } | null) => mountedRef.current && setToast(v),
+  };
+
+  const [confirmOpen, setConfirmOpen] = React.useState(false);
+  const [pending, setPending] = React.useState<{ id: string; from: OrderStatus; to: OrderStatus } | null>(null);
+
+  const [deleteOpen, setDeleteOpen] = React.useState(false);
+  const [deleteId, setDeleteId] = React.useState<string | null>(null);
+
+  const [editOpen, setEditOpen] = React.useState(false);
+  const [editOrder, setEditOrder] = React.useState<{ id: string; kolicina: number; adresa: string } | null>(null);
+  const [editKolicina, setEditKolicina] = React.useState(1);
+  const [editAdresa, setEditAdresa] = React.useState("");
+  const [editLoading, setEditLoading] = React.useState(false);
+
+  const columns = React.useMemo<GridColDef<OrderRow>[]>(() => {
+    const dateCol: GridColDef<OrderRow> = {
+      field: "datum_kreiranja",
+      headerName: "Datum",
+      width: 115,
+      sortable: true,
+      valueFormatter: (v) => {
+        const s = String(v ?? "");
+        if (!s) return "-";
+        return s.split("T")[0];
+      },
+    };
+
+    const ukupnoCol: GridColDef<OrderRow> = {
+      field: "ukupno",
+      headerName: "Ukupno",
+      width: 140,
+      sortable: true,
+      valueGetter: (_, row) => row.kolicina * Number(row.cijena_po_komadu),
+      renderCell: (params) => <Box sx={{ width: "100%", textAlign: "right" }}>{formatKM(params.value)}</Box>,
+      sortComparator: (v1, v2) => Number(v1) - Number(v2),
+      align: "right",
+      headerAlign: "right",
+    };
+
     const statusCol: GridColDef<OrderRow> = {
       field: "status",
       headerName: "Status",
-      width: 170,
+      width: 180,
       sortable: true,
       align: "center",
       headerAlign: "center",
@@ -137,27 +190,18 @@ export default function OrdersTable({ rows, isAdmin }: { rows: OrderRow[]; isAdm
               "&:hover .MuiOutlinedInput-notchedOutline": { borderColor: "transparent" },
               "&.Mui-focused .MuiOutlinedInput-notchedOutline": { borderColor: "transparent" },
               "& .MuiSelect-icon": { color: fg },
-
               "& .MuiSelect-select": {
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                gap: 8,
+                gap: 1,
               },
             }}
             renderValue={(val) => {
               const v = val as OrderStatus;
               const c = statusColors(v);
               return (
-                <Box
-                  sx={{
-                    width: "100%",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: 1,
-                  }}
-                >
+                <Box sx={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 1 }}>
                   <Box sx={{ width: 10, height: 10, borderRadius: "50%", bgcolor: c.fg }} />
                   <span style={{ fontSize: 13 }}>{v}</span>
                 </Box>
@@ -180,65 +224,64 @@ export default function OrdersTable({ rows, isAdmin }: { rows: OrderRow[]; isAdm
       },
     };
 
-    const dateCol: GridColDef<OrderRow> = {
-      field: "datum_kreiranja",
-      headerName: "Datum",
-      width: 100,
-      sortable: true,
-      valueFormatter: (v) => {
-        const s = String(v ?? "");
-        if (!s) return "-";
-        return s.split("T")[0];
-      },
-    };
-
     const actionsCol: GridColDef<OrderRow> = {
       field: "_actions",
       headerName: "Akcije",
-      width: 120,
       sortable: false,
       filterable: false,
       disableColumnMenu: true,
       align: "center",
       headerAlign: "center",
+      width: 140,
       renderCell: (params) => {
         const id = String((params.row as any)?.id ?? "");
         if (!id || id === "undefined") return <span style={{ opacity: 0.6 }}>-</span>;
 
         return (
           <Box
-            sx={{ display: "flex", gap: 0.5, justifyContent: "center", width: "100%" }}
+            sx={{
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              gap: 1,
+              width: "100%",
+              height: "100%",
+            }}
             onClick={(e) => e.stopPropagation()}
             onMouseDown={(e) => e.stopPropagation()}
             onKeyDown={(e) => e.stopPropagation()}
           >
             <Tooltip title="Uredi">
-              <IconButton
-                size="small"
-                aria-label="Uredi narudžbu"
-                onClick={() => {
-                  const row = params.row as OrderRow;
-                  setEditOrder({ id, kolicina: row.kolicina, adresa: row.adresa_isporuke ?? "" });
-                  setEditKolicina(row.kolicina);
-                  setEditAdresa(row.adresa_isporuke ?? "");
-                  setEditOpen(true);
-                }}
-              >
-                <EditOutlinedIcon fontSize="small" />
-              </IconButton>
+              <span>
+                <IconButton
+                  size="small"
+                  disabled={busy}
+                  onClick={() => {
+                    const row = params.row as OrderRow;
+                    setEditOrder({ id, kolicina: row.kolicina, adresa: row.adresa_isporuke ?? "" });
+                    setEditKolicina(row.kolicina);
+                    setEditAdresa(row.adresa_isporuke ?? "");
+                    setEditOpen(true);
+                  }}
+                >
+                  <EditOutlinedIcon fontSize="small" />
+                </IconButton>
+              </span>
             </Tooltip>
 
             <Tooltip title="Obriši">
-              <IconButton
-                size="small"
-                aria-label="Obriši narudžbu"
-                onClick={() => {
-                  setDeleteId(id);
-                  setDeleteOpen(true);
-                }}
-              >
-                <DeleteOutlineOutlinedIcon fontSize="small" />
-              </IconButton>
+              <span>
+                <IconButton
+                  size="small"
+                  disabled={busy}
+                  onClick={() => {
+                    setDeleteId(id);
+                    setDeleteOpen(true);
+                  }}
+                >
+                  <DeleteOutlineOutlinedIcon fontSize="small" />
+                </IconButton>
+              </span>
             </Tooltip>
           </Box>
         );
@@ -248,57 +291,53 @@ export default function OrdersTable({ rows, isAdmin }: { rows: OrderRow[]; isAdm
     return [
       {
         field: "id",
-        headerName: "ID narudžbe",
+        headerName: "ID",
         width: 120,
         renderCell: (params) => {
           const id = String((params.row as any)?.id ?? "");
           const short = id.length > 12 ? `${id.slice(0, 4)}…${id.slice(-4)}` : id;
+
           if (!id || id === "undefined") return <span style={{ color: "#b71c1c" }}>—</span>;
 
           return (
-            <Link component={NextLink} href={`/orders/${id}`} underline="hover" title={id}>
-              {short}
-            </Link>
+            <NextLink href={`/orders/${encodeURIComponent(id)}`} style={{ textDecoration: "none" }}>
+              <Box
+                component="span"
+                title={id}
+                sx={{
+                  cursor: "pointer",
+                  textDecoration: "underline",
+                  textUnderlineOffset: "2px",
+                }}
+              >
+                {short}
+              </Box>
+            </NextLink>
           );
         },
       },
       dateCol,
-      { field: "proizvod", headerName: "Proizvod", width: 120 },
-      { field: "kupac", headerName: "Kupac", width: 105 },
-      { field: "kolicina", headerName: "Količina",headerAlign: "left",align: "left", type: "number", width: 90 },
-      {
-        field: "ukupno",
-        headerName: "Ukupno (KM)",
-        width: 120,
-        sortable: true,
-        valueGetter: (_, row) => row.kolicina * Number(row.cijena_po_komadu),
-        valueFormatter: (v) => Number(v ?? 0).toFixed(2),
-        sortComparator: (v1, v2) => Number(v1) - Number(v2),
-      },
-      { field: "adresa_isporuke", headerName: "Adresa", flex: 1, minWidth: 140 },
+      { field: "proizvod", headerName: "Proizvod", width: 140 },
+      { field: "kupac", headerName: "Kupac", width: 130 },
+      { field: "kolicina", headerName: "Količina", type: "number", width: 95, align: "left", headerAlign: "left" },
+      ukupnoCol,
+      { field: "adresa_isporuke", headerName: "Adresa", flex: 1, minWidth: 160 },
       statusCol,
       actionsCol,
     ];
-  }, [isAdmin]);
+  }, [isAdmin, busy]);
 
   const doUpdate = async () => {
     if (!pending) return;
 
     if (!isAdmin) {
-      setToast({ type: "error", msg: "Nemaš pravo mijenjati status." });
+      safe.setToast({ type: "error", msg: "Nemaš pravo mijenjati status." });
       setPending(null);
       setConfirmOpen(false);
       return;
     }
 
     const { id, from, to } = pending;
-
-    if (!id || id === "undefined") {
-      setToast({ type: "error", msg: "ID narudžbe nedostaje (undefined)." });
-      setPending(null);
-      setConfirmOpen(false);
-      return;
-    }
 
     setLocalRows((prev) => prev.map((r) => (r.id === id ? { ...r, status: to } : r)));
     setConfirmOpen(false);
@@ -313,10 +352,11 @@ export default function OrdersTable({ rows, isAdmin }: { rows: OrderRow[]; isAdm
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data?.error || "Update failed");
 
-      setToast({ type: "success", msg: `Status promijenjen: ${from} → ${to}` });
+      safe.setToast({ type: "success", msg: `Status promijenjen: ${from} → ${to}` });
+      router.refresh();
     } catch (e: any) {
       setLocalRows((prev) => prev.map((r) => (r.id === id ? { ...r, status: from } : r)));
-      setToast({ type: "error", msg: e?.message || "Greška pri ažuriranju statusa" });
+      safe.setToast({ type: "error", msg: e?.message || "Greška pri ažuriranju statusa" });
     } finally {
       setPending(null);
     }
@@ -324,24 +364,20 @@ export default function OrdersTable({ rows, isAdmin }: { rows: OrderRow[]; isAdm
 
   const doDelete = async () => {
     const id = String(deleteId ?? "");
-    if (!id || id === "undefined") {
-      setToast({ type: "error", msg: "Neispravan ID narudžbe." });
-      setDeleteOpen(false);
-      setDeleteId(null);
-      return;
-    }
-
     setDeleteOpen(false);
+    safe.setBusy(true);
 
     try {
       const res = await deleteOrderAction(id);
       if (!res.ok) throw new Error(res.error || "Delete failed");
 
       setLocalRows((prev) => prev.filter((r) => r.id !== id));
-      setToast({ type: "success", msg: "Narudžba obrisana." });
+      safe.setToast({ type: "success", msg: "Narudžba obrisana." });
+      router.refresh();
     } catch (e: any) {
-      setToast({ type: "error", msg: e?.message || "Greška pri brisanju" });
+      safe.setToast({ type: "error", msg: e?.message || "Greška pri brisanju" });
     } finally {
+      safe.setBusy(false);
       setDeleteId(null);
     }
   };
@@ -350,11 +386,11 @@ export default function OrdersTable({ rows, isAdmin }: { rows: OrderRow[]; isAdm
     if (!editOrder) return;
 
     if (!editAdresa.trim()) {
-      setToast({ type: "error", msg: "Adresa isporuke je obavezna." });
+      safe.setToast({ type: "error", msg: "Adresa isporuke je obavezna." });
       return;
     }
     if (editAdresa.trim().length < 5) {
-      setToast({ type: "error", msg: "Adresa isporuke je prekratka." });
+      safe.setToast({ type: "error", msg: "Adresa isporuke je prekratka." });
       return;
     }
 
@@ -369,7 +405,7 @@ export default function OrdersTable({ rows, isAdmin }: { rows: OrderRow[]; isAdm
     setEditLoading(false);
 
     if (!res.ok) {
-      setToast({ type: "error", msg: res.error || "Greška pri spremanju." });
+      safe.setToast({ type: "error", msg: res.error || "Greška pri spremanju." });
       return;
     }
 
@@ -378,38 +414,48 @@ export default function OrdersTable({ rows, isAdmin }: { rows: OrderRow[]; isAdm
         r.id === editOrder.id ? { ...r, kolicina: editKolicina, adresa_isporuke: editAdresa.trim() } : r
       )
     );
-    setToast({ type: "success", msg: "Narudžba je ažurirana." });
+
+    safe.setToast({ type: "success", msg: "Narudžba je ažurirana." });
     setEditOpen(false);
     setEditOrder(null);
+    router.refresh();
   };
 
   return (
     <>
-      <Paper elevation={3} sx={{ p: 2, borderRadius: 2 }}>
-        <DataGrid
-          rows={localRows}
-          columns={columns}
-          getRowId={(row) => row.id}
-          autoHeight
-          hideFooter
-          disableRowSelectionOnClick
-          disableColumnMenu
-          sx={{
-            border: 0,
-            "& .MuiDataGrid-columnHeaders": { borderBottom: "1px solid #eee" },
-          }}
-        />
+      <Paper elevation={0} variant="outlined" sx={{ width: "100%", borderRadius: "8px", overflow: "hidden" }}>
+        {!hydrated ? (
+          <Box sx={{ p: 2 }}>Učitavam…</Box>
+        ) : (
+          <DataGrid
+            rows={localRows}
+            columns={columns}
+            getRowId={(row) => row.id}
+            autoHeight
+            checkboxSelection
+            sx={{
+              border: 0,
+              "& .MuiDataGrid-columnHeaders": { borderBottom: "1px solid", borderColor: "divider" },
+
+              "& .MuiDataGrid-footerContainer": { borderTop: "0 !important" },
+              "& .MuiDataGrid-withBorderColor": { borderColor: "transparent" },
+            }}
+          />
+        )}
       </Paper>
 
       <Dialog
         open={confirmOpen && isAdmin}
         onClose={() => {
+          if (busy) return;
           setConfirmOpen(false);
           setPending(null);
         }}
+        fullWidth
+        maxWidth="xs"
       >
         <DialogTitle>Potvrda promjene</DialogTitle>
-        <DialogContent>
+        <DialogContent sx={{ pt: 1 }}>
           Da li si sigurna da želiš promijeniti status sa <b>{pending?.from}</b> na <b>{pending?.to}</b>?
         </DialogContent>
         <DialogActions>
@@ -418,10 +464,11 @@ export default function OrdersTable({ rows, isAdmin }: { rows: OrderRow[]; isAdm
               setConfirmOpen(false);
               setPending(null);
             }}
+            disabled={busy}
           >
             Odustani
           </Button>
-          <Button variant="contained" onClick={doUpdate}>
+          <Button variant="contained" onClick={doUpdate} disabled={busy}>
             Promijeni
           </Button>
         </DialogActions>
@@ -430,30 +477,43 @@ export default function OrdersTable({ rows, isAdmin }: { rows: OrderRow[]; isAdm
       <Dialog
         open={deleteOpen}
         onClose={() => {
+          if (busy) return;
           setDeleteOpen(false);
           setDeleteId(null);
         }}
+        fullWidth
+        maxWidth="xs"
       >
         <DialogTitle>Potvrda brisanja</DialogTitle>
-        <DialogContent>Da li si sigurna da želiš obrisati ovu narudžbu?</DialogContent>
+        <DialogContent sx={{ pt: 1 }}>Da li si sigurna da želiš obrisati ovu narudžbu?</DialogContent>
         <DialogActions>
           <Button
             onClick={() => {
               setDeleteOpen(false);
               setDeleteId(null);
             }}
+            disabled={busy}
           >
             Odustani
           </Button>
-          <Button color="error" variant="contained" onClick={doDelete}>
+          <Button color="error" variant="contained" onClick={doDelete} disabled={busy}>
             Obriši
           </Button>
         </DialogActions>
       </Dialog>
 
-      <Dialog open={editOpen} onClose={() => setEditOpen(false)} maxWidth="sm" fullWidth>
+      <Dialog
+        open={editOpen}
+        onClose={() => {
+          if (editLoading) return;
+          setEditOpen(false);
+          setEditOrder(null);
+        }}
+        fullWidth
+        maxWidth="sm"
+      >
         <DialogTitle>Uredi narudžbu</DialogTitle>
-        <DialogContent>
+        <DialogContent sx={{ pt: 1 }}>
           <Box sx={{ display: "grid", gap: 2, mt: 1 }}>
             <TextField
               label="Količina"
@@ -462,6 +522,7 @@ export default function OrdersTable({ rows, isAdmin }: { rows: OrderRow[]; isAdm
               onChange={(e) => setEditKolicina(Number(e.target.value))}
               inputProps={{ min: 1 }}
               fullWidth
+              disabled={editLoading}
             />
 
             <TextField
@@ -473,6 +534,7 @@ export default function OrdersTable({ rows, isAdmin }: { rows: OrderRow[]; isAdm
               minRows={1}
               maxRows={3}
               spellCheck={false}
+              disabled={editLoading}
             />
           </Box>
         </DialogContent>
@@ -482,6 +544,7 @@ export default function OrdersTable({ rows, isAdmin }: { rows: OrderRow[]; isAdm
               setEditOpen(false);
               setEditOrder(null);
             }}
+            disabled={editLoading}
           >
             Odustani
           </Button>
@@ -491,18 +554,18 @@ export default function OrdersTable({ rows, isAdmin }: { rows: OrderRow[]; isAdm
         </DialogActions>
       </Dialog>
 
-      {toast && (
-        <Snackbar
-          open
-          autoHideDuration={2500}
-          onClose={() => setToast(null)}
-          anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
-        >
-          <Alert severity={toast.type} onClose={() => setToast(null)} sx={{ width: "100%" }}>
+      <Snackbar
+        open={!!toast}
+        autoHideDuration={3500}
+        onClose={() => safe.setToast(null)}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      >
+        {toast ? (
+          <Alert onClose={() => safe.setToast(null)} severity={toast.type} variant="filled">
             {toast.msg}
           </Alert>
-        </Snackbar>
-      )}
+        ) : undefined}
+      </Snackbar>
     </>
   );
 }

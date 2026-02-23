@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import * as React from "react";
 import { useRouter } from "next/navigation";
+
 import Paper from "@mui/material/Paper";
 import Box from "@mui/material/Box";
-import Chip from "@mui/material/Chip";
 import Select from "@mui/material/Select";
 import MenuItem from "@mui/material/MenuItem";
 import Dialog from "@mui/material/Dialog";
@@ -13,17 +13,16 @@ import DialogContent from "@mui/material/DialogContent";
 import DialogActions from "@mui/material/DialogActions";
 import Button from "@mui/material/Button";
 import TextField from "@mui/material/TextField";
-import Snackbar from "@mui/material/Snackbar";
-import Alert from "@mui/material/Alert";
 import Typography from "@mui/material/Typography";
 import Tooltip from "@mui/material/Tooltip";
 import IconButton from "@mui/material/IconButton";
-import Fab from "@mui/material/Fab";
-import AddIcon from "@mui/icons-material/Add";
+
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import DeleteOutlineOutlinedIcon from "@mui/icons-material/DeleteOutlineOutlined";
-import { DataGrid, GridColDef } from "@mui/x-data-grid";
-import { createUserAction, updateUserAction, deleteUserAction } from "@/app/users/actions";
+
+import { DataGrid, type GridColDef } from "@mui/x-data-grid";
+
+import { updateUserAction, deleteUserAction } from "@/app/users/actions";
 
 export type UserRole = "admin" | "user";
 
@@ -34,118 +33,127 @@ export type UserRow = {
   role: UserRole;
 };
 
-function roleChip(role: UserRole) {
-  if (role === "admin") return { label: "ADMIN", color: "warning" as const };
-  return { label: "USER", color: "default" as const };
-}
-
 export default function UsersTable({
   rows,
   myUserId,
+  onToast,
 }: {
   rows: UserRow[];
   myUserId: string;
+  onToast?: (t: { type: "success" | "error"; msg: string } | null) => void;
 }) {
   const router = useRouter();
-  const [localRows, setLocalRows] = useState<UserRow[]>(rows);
-  useEffect(() => setLocalRows(rows), [rows]);
 
-  const [confirmOpen, setConfirmOpen] = useState(false);
-  const [pending, setPending] = useState<{
+  const mountedRef = React.useRef(false);
+  const [hydrated, setHydrated] = React.useState(false);
+  React.useEffect(() => {
+    mountedRef.current = true;
+    setHydrated(true);
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+
+  const toast = (t: { type: "success" | "error"; msg: string }) => onToast?.(t);
+
+  const [localRows, setLocalRows] = React.useState<UserRow[]>(rows);
+  React.useEffect(() => setLocalRows(rows), [rows]);
+
+  const [confirmOpen, setConfirmOpen] = React.useState(false);
+  const [pending, setPending] = React.useState<{
     id: string;
     from: UserRole;
     to: UserRole;
     ime: string;
     email: string;
   } | null>(null);
+  const [saving, setSaving] = React.useState(false);
 
-  const [saving, setSaving] = useState(false);
-  const [toast, setToast] = useState<{ type: "success" | "error"; msg: string } | null>(null);
+  const [editOpen, setEditOpen] = React.useState(false);
+  const [editUser, setEditUser] = React.useState<UserRow | null>(null);
+  const [editIme, setEditIme] = React.useState("");
+  const [editEmail, setEditEmail] = React.useState("");
+  const [editRole, setEditRole] = React.useState<UserRole>("user");
+  const [editLoading, setEditLoading] = React.useState(false);
 
-  const [createOpen, setCreateOpen] = useState(false);
-  const [createIme, setCreateIme] = useState("");
-  const [createEmail, setCreateEmail] = useState("");
-  const [createPassword, setCreatePassword] = useState("");
-  const [createRole, setCreateRole] = useState<UserRole>("user");
-  const [createLoading, setCreateLoading] = useState(false);
+  const [deleteOpen, setDeleteOpen] = React.useState(false);
+  const [deleteUser, setDeleteUser] = React.useState<UserRow | null>(null);
+  const [deleteLoading, setDeleteLoading] = React.useState(false);
 
-  const [editOpen, setEditOpen] = useState(false);
-  const [editUser, setEditUser] = useState<UserRow | null>(null);
-  const [editIme, setEditIme] = useState("");
-  const [editEmail, setEditEmail] = useState("");
-  const [editRole, setEditRole] = useState<UserRole>("user");
-  const [editLoading, setEditLoading] = useState(false);
+  const safe = {
+    setLocalRows: (fn: any) => mountedRef.current && setLocalRows(fn),
+    setConfirmOpen: (v: boolean) => mountedRef.current && setConfirmOpen(v),
+    setPending: (v: any) => mountedRef.current && setPending(v),
+    setSaving: (v: boolean) => mountedRef.current && setSaving(v),
+    setEditOpen: (v: boolean) => mountedRef.current && setEditOpen(v),
+    setEditUser: (v: UserRow | null) => mountedRef.current && setEditUser(v),
+    setEditIme: (v: string) => mountedRef.current && setEditIme(v),
+    setEditEmail: (v: string) => mountedRef.current && setEditEmail(v),
+    setEditRole: (v: UserRole) => mountedRef.current && setEditRole(v),
+    setEditLoading: (v: boolean) => mountedRef.current && setEditLoading(v),
+    setDeleteOpen: (v: boolean) => mountedRef.current && setDeleteOpen(v),
+    setDeleteUser: (v: UserRow | null) => mountedRef.current && setDeleteUser(v),
+    setDeleteLoading: (v: boolean) => mountedRef.current && setDeleteLoading(v),
+  };
 
-  const [deleteOpen, setDeleteOpen] = useState(false);
-  const [deleteUser, setDeleteUser] = useState<UserRow | null>(null);
-  const [deleteLoading, setDeleteLoading] = useState(false);
-
-  const columns: GridColDef<UserRow>[] = useMemo(() => {
+  const columns: GridColDef<UserRow>[] = React.useMemo(() => {
     return [
-      { field: "ime", headerName: "Ime", flex: 1, minWidth: 160 },
-      { field: "email", headerName: "Email", flex: 1, minWidth: 220 },
+      { field: "ime", headerName: "Ime", flex: 0.7, minWidth: 140 },
+      { field: "email", headerName: "Email", flex: 1, minWidth: 200 },
       {
         field: "role",
         headerName: "Uloga",
-        width: 240,
+        width: 160,
         sortable: true,
         renderCell: (params) => {
           const current = params.value as UserRole;
           const row = params.row as UserRow;
-
           const isSelf = row.id === myUserId;
-          const c = roleChip(current);
-
-          const select = (
-            <Select
-              size="small"
-              value={current}
-              disabled={isSelf}
-              onChange={(e) => {
-                const next = e.target.value as UserRole;
-                if (next === current) return;
-
-                if (isSelf) {
-                  setToast({ type: "error", msg: "Ne možete promijeniti svoju ulogu." });
-                  return;
-                }
-
-                setPending({
-                  id: row.id,
-                  from: current,
-                  to: next,
-                  ime: row.ime,
-                  email: row.email,
-                });
-                setConfirmOpen(true);
-              }}
-              sx={{ height: 34, minWidth: 110 }}
-              onClick={(e) => e.stopPropagation()}
-              onMouseDown={(e) => e.stopPropagation()}
-            >
-              <MenuItem value="user">user</MenuItem>
-              <MenuItem value="admin">admin</MenuItem>
-            </Select>
-          );
 
           return (
             <Box
-              sx={{ width: "100%", display: "flex", alignItems: "center", gap: 1 }}
+              sx={{
+                width: "100%",
+                height: "100%",
+                display: "flex",
+                alignItems: "center",
+                gap: 1,
+              }}
               onClick={(e) => e.stopPropagation()}
               onMouseDown={(e) => e.stopPropagation()}
             >
-              <Chip label={c.label} color={c.color} size="small" sx={{ fontWeight: 800 }} />
+              <Select
+                size="small"
+                value={current}
+                disabled={isSelf || saving}
+                onChange={(e) => {
+                  const next = e.target.value as UserRole;
+                  if (next === current) return;
 
-              {isSelf ? (
-                <Tooltip title="Ne možete promijeniti svoju ulogu">
-                  <Box>{select}</Box>
-                </Tooltip>
-              ) : (
-                select
-              )}
+                  if (isSelf) {
+                    toast({ type: "error", msg: "Ne možete promijeniti svoju ulogu." });
+                    return;
+                  }
+
+                  safe.setPending({
+                    id: row.id,
+                    from: current,
+                    to: next,
+                    ime: row.ime,
+                    email: row.email,
+                  });
+                  safe.setConfirmOpen(true);
+                }}
+                sx={{ height: 34, minWidth: 90 }}
+                onClick={(e) => e.stopPropagation()}
+                onMouseDown={(e) => e.stopPropagation()}
+              >
+                <MenuItem value="user">user</MenuItem>
+                <MenuItem value="admin">admin</MenuItem>
+              </Select>
 
               {isSelf && (
-                <Typography variant="caption" sx={{ opacity: 0.7, ml: 0.5, whiteSpace: "nowrap" }}>
+                <Typography variant="caption" sx={{ opacity: 0.7, whiteSpace: "nowrap" }}>
                   (vi)
                 </Typography>
               )}
@@ -156,10 +164,10 @@ export default function UsersTable({
       {
         field: "id",
         headerName: "ID",
-        width: 180,
+        width: 130,
         renderCell: (params) => {
           const v = String(params.value ?? "");
-          const short = v.length > 12 ? `${v.slice(0, 4)}…${v.slice(-4)}` : v;
+          const short = v.length > 10 ? `${v.slice(0, 3)}…${v.slice(-3)}` : v;
           return <span title={v}>{short}</span>;
         },
       },
@@ -178,25 +186,35 @@ export default function UsersTable({
 
           return (
             <Box
-              sx={{ display: "flex", gap: 0.5, justifyContent: "center", width: "100%" }}
+              sx={{
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                gap: 1,
+                width: "100%",
+                height: "100%",
+              }}
               onClick={(e) => e.stopPropagation()}
               onMouseDown={(e) => e.stopPropagation()}
               onKeyDown={(e) => e.stopPropagation()}
             >
               <Tooltip title="Uredi">
-                <IconButton
-                  size="small"
-                  aria-label="Uredi korisnika"
-                  onClick={() => {
-                    setEditUser(row);
-                    setEditIme(row.ime);
-                    setEditEmail(row.email);
-                    setEditRole(row.role);
-                    setEditOpen(true);
-                  }}
-                >
-                  <EditOutlinedIcon fontSize="small" />
-                </IconButton>
+                <span>
+                  <IconButton
+                    size="small"
+                    aria-label="Uredi korisnika"
+                    disabled={saving || editLoading || deleteLoading}
+                    onClick={() => {
+                      safe.setEditUser(row);
+                      safe.setEditIme(row.ime);
+                      safe.setEditEmail(row.email);
+                      safe.setEditRole(row.role);
+                      safe.setEditOpen(true);
+                    }}
+                  >
+                    <EditOutlinedIcon fontSize="small" />
+                  </IconButton>
+                </span>
               </Tooltip>
 
               <Tooltip title={isSelf ? "Ne možete obrisati sebe" : "Obriši"}>
@@ -204,11 +222,11 @@ export default function UsersTable({
                   <IconButton
                     size="small"
                     aria-label="Obriši korisnika"
+                    disabled={isSelf || saving || editLoading || deleteLoading}
                     onClick={() => {
-                      setDeleteUser(row);
-                      setDeleteOpen(true);
+                      safe.setDeleteUser(row);
+                      safe.setDeleteOpen(true);
                     }}
-                    disabled={isSelf}
                   >
                     <DeleteOutlineOutlinedIcon fontSize="small" />
                   </IconButton>
@@ -219,24 +237,23 @@ export default function UsersTable({
         },
       },
     ];
-  }, [myUserId]);
+  }, [myUserId, saving, editLoading, deleteLoading]);
 
   const doUpdate = async () => {
     if (!pending) return;
 
     if (pending.id === myUserId) {
-      setToast({ type: "error", msg: "Ne možete promijeniti svoju ulogu." });
-      setPending(null);
-      setConfirmOpen(false);
+      toast({ type: "error", msg: "Ne možete promijeniti svoju ulogu." });
+      safe.setPending(null);
+      safe.setConfirmOpen(false);
       return;
     }
 
     const { id, from, to } = pending;
 
-    setSaving(true);
-    setConfirmOpen(false);
-
-    setLocalRows((prev) => prev.map((u) => (u.id === id ? { ...u, role: to } : u)));
+    safe.setSaving(true);
+    safe.setConfirmOpen(false);
+    safe.setLocalRows((prev: UserRow[]) => prev.map((u) => (u.id === id ? { ...u, role: to } : u)));
 
     try {
       const res = await updateUserAction({
@@ -245,98 +262,47 @@ export default function UsersTable({
         email: pending.email,
         role: to,
       });
-
       if (!res.ok) throw new Error(res.error || "Forbidden");
 
-      setToast({ type: "success", msg: `Uloga promijenjena: ${from} → ${to}` });
+      toast({ type: "success", msg: `Uloga promijenjena: ${from} → ${to}` });
       router.refresh();
     } catch (e: any) {
-      setLocalRows((prev) => prev.map((u) => (u.id === id ? { ...u, role: from } : u)));
-      setToast({ type: "error", msg: e?.message || "Greška pri promjeni uloge" });
+      safe.setLocalRows((prev: UserRow[]) => prev.map((u) => (u.id === id ? { ...u, role: from } : u)));
+      toast({ type: "error", msg: e?.message || "Greška pri promjeni uloge" });
     } finally {
-      setSaving(false);
-      setPending(null);
-    }
-  };
-
-  const doCreate = async () => {
-    if (!createIme.trim() || createIme.length < 2) {
-      setToast({ type: "error", msg: "Ime mora imati najmanje 2 karaktera." });
-      return;
-    }
-    if (!createEmail.trim() || !createEmail.includes("@")) {
-      setToast({ type: "error", msg: "Neispravan email." });
-      return;
-    }
-    if (!createPassword.trim() || createPassword.length < 6) {
-      setToast({ type: "error", msg: "Lozinka mora imati najmanje 6 karaktera." });
-      return;
-    }
-
-    setCreateLoading(true);
-
-    try {
-      const res = await createUserAction({
-        ime: createIme.trim(),
-        email: createEmail.trim().toLowerCase(),
-        password: createPassword.trim(),
-        role: createRole,
-      });
-
-      if (!res.ok) {
-        setToast({ type: "error", msg: res.error || "Greška pri kreiranju korisnika." });
-        return;
-      }
-
-      setToast({ type: "success", msg: "Korisnik je uspješno kreiran." });
-      setCreateOpen(false);
-      setCreateIme("");
-      setCreateEmail("");
-      setCreatePassword("");
-      setCreateRole("user");
-      router.refresh();
-    } catch (e: any) {
-      setToast({ type: "error", msg: e?.message || "Greška pri kreiranju korisnika." });
-    } finally {
-      setCreateLoading(false);
+      safe.setSaving(false);
+      safe.setPending(null);
     }
   };
 
   const doEdit = async () => {
     if (!editUser) return;
 
-    if (!editIme.trim() || editIme.length < 2) {
-      setToast({ type: "error", msg: "Ime mora imati najmanje 2 karaktera." });
-      return;
-    }
-    if (!editEmail.trim() || !editEmail.includes("@")) {
-      setToast({ type: "error", msg: "Neispravan email." });
-      return;
-    }
+    const ime = editIme.trim();
+    const email = editEmail.trim().toLowerCase();
 
-    setEditLoading(true);
+    if (!ime || ime.length < 2) return toast({ type: "error", msg: "Ime mora imati najmanje 2 karaktera." });
+    if (!email || !email.includes("@")) return toast({ type: "error", msg: "Neispravan email." });
 
+    safe.setEditLoading(true);
     try {
       const res = await updateUserAction({
         userId: editUser.id,
-        ime: editIme.trim(),
-        email: editEmail.trim().toLowerCase(),
+        ime,
+        email,
         role: editRole,
       });
 
-      if (!res.ok) {
-        setToast({ type: "error", msg: res.error || "Greška pri ažuriranju korisnika." });
-        return;
-      }
+      if (!res.ok) return toast({ type: "error", msg: res.error || "Greška pri ažuriranju korisnika." });
 
-      setToast({ type: "success", msg: "Korisnik je ažuriran." });
-      setEditOpen(false);
-      setEditUser(null);
+      toast({ type: "success", msg: "Korisnik je ažuriran." });
+      safe.setEditOpen(false);
+      safe.setEditUser(null);
       router.refresh();
     } catch (e: any) {
-      setToast({ type: "error", msg: e?.message || "Greška pri ažuriranju korisnika." });
+      toast({ type: "error", msg: e?.message || "Greška pri ažuriranju korisnika." });
     } finally {
-      setEditLoading(false);
+      safe.setEditLoading(false);
     }
   };
 
@@ -344,74 +310,51 @@ export default function UsersTable({
     if (!deleteUser) return;
 
     if (deleteUser.id === myUserId) {
-      setToast({ type: "error", msg: "Ne možete obrisati sebe." });
-      setDeleteOpen(false);
-      setDeleteUser(null);
+      toast({ type: "error", msg: "Ne možete obrisati sebe." });
+      safe.setDeleteOpen(false);
+      safe.setDeleteUser(null);
       return;
     }
 
-    setDeleteLoading(true);
-
+    safe.setDeleteLoading(true);
     try {
       const res = await deleteUserAction(deleteUser.id);
+      if (!res.ok) return toast({ type: "error", msg: res.error || "Greška pri brisanju korisnika." });
 
-      if (!res.ok) {
-        setToast({ type: "error", msg: res.error || "Greška pri brisanju korisnika." });
-        return;
-      }
-
-      setLocalRows((prev) => prev.filter((u) => u.id !== deleteUser.id));
-      setToast({ type: "success", msg: "Korisnik je obrisan." });
-      setDeleteOpen(false);
-      setDeleteUser(null);
+      safe.setLocalRows((prev: UserRow[]) => prev.filter((u) => u.id !== deleteUser.id));
+      toast({ type: "success", msg: "Korisnik je obrisan." });
+      safe.setDeleteOpen(false);
+      safe.setDeleteUser(null);
       router.refresh();
     } catch (e: any) {
-      setToast({ type: "error", msg: e?.message || "Greška pri brisanju korisnika." });
+      toast({ type: "error", msg: e?.message || "Greška pri brisanju korisnika." });
     } finally {
-      setDeleteLoading(false);
+      safe.setDeleteLoading(false);
     }
   };
 
   return (
     <>
-      <Paper elevation={3} sx={{ p: 2, borderRadius: 2 }}>
-        <DataGrid
-          rows={localRows}
-          columns={columns}
-          getRowId={(row) => row.id}
-          autoHeight
-          hideFooter
-          disableRowSelectionOnClick
-          disableColumnMenu
-          sx={{
-            border: 0,
-            "& .MuiDataGrid-columnHeaders": { borderBottom: "1px solid #eee" },
-          }}
-        />
+      <Paper elevation={0} variant="outlined" sx={{ width: "100%", borderRadius: "8px", overflow: "hidden" }}>
+        {!hydrated ? (
+          <Box sx={{ p: 2 }}>Učitavam…</Box>
+        ) : (
+          <DataGrid
+            rows={localRows}
+            columns={columns}
+            getRowId={(row) => row.id}
+            autoHeight
+            checkboxSelection
+          />
+        )}
       </Paper>
-
-      <Tooltip title="Kreiraj korisnika" placement="left">
-        <Fab
-          color="primary"
-          aria-label="kreiraj korisnika"
-          onClick={() => setCreateOpen(true)}
-          sx={{
-            position: "fixed",
-            right: 24,
-            bottom: 24,
-            zIndex: 1300,
-          }}
-        >
-          <AddIcon />
-        </Fab>
-      </Tooltip>
 
       <Dialog
         open={confirmOpen}
         onClose={() => {
           if (saving) return;
-          setConfirmOpen(false);
-          setPending(null);
+          safe.setConfirmOpen(false);
+          safe.setPending(null);
         }}
         maxWidth="xs"
         fullWidth
@@ -434,8 +377,8 @@ export default function UsersTable({
         <DialogActions>
           <Button
             onClick={() => {
-              setConfirmOpen(false);
-              setPending(null);
+              safe.setConfirmOpen(false);
+              safe.setPending(null);
             }}
             disabled={saving}
           >
@@ -447,84 +390,34 @@ export default function UsersTable({
         </DialogActions>
       </Dialog>
 
-      {/* Create User Dialog */}
-      <Dialog open={createOpen} onClose={() => setCreateOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>Kreiraj korisnika</DialogTitle>
-        <DialogContent>
-          <Box sx={{ display: "grid", gap: 2, mt: 1 }}>
-            <TextField
-              label="Ime"
-              value={createIme}
-              onChange={(e) => setCreateIme(e.target.value)}
-              fullWidth
-              required
-            />
-            <TextField
-              label="Email"
-              type="email"
-              value={createEmail}
-              onChange={(e) => setCreateEmail(e.target.value)}
-              fullWidth
-              required
-            />
-            <TextField
-              label="Lozinka"
-              type="password"
-              value={createPassword}
-              onChange={(e) => setCreatePassword(e.target.value)}
-              fullWidth
-              required
-              helperText="Najmanje 6 karaktera"
-            />
-            <TextField
-              select
-              label="Uloga"
-              value={createRole}
-              onChange={(e) => setCreateRole(e.target.value as UserRole)}
-              fullWidth
-            >
-              <MenuItem value="user">user</MenuItem>
-              <MenuItem value="admin">admin</MenuItem>
-            </TextField>
-          </Box>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setCreateOpen(false)} disabled={createLoading}>
-            Odustani
-          </Button>
-          <Button variant="contained" onClick={doCreate} disabled={createLoading}>
-            Kreiraj
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* Edit User Dialog */}
-      <Dialog open={editOpen} onClose={() => setEditOpen(false)} maxWidth="sm" fullWidth>
+      <Dialog open={editOpen} onClose={() => safe.setEditOpen(false)} maxWidth="sm" fullWidth>
         <DialogTitle>Uredi korisnika</DialogTitle>
         <DialogContent>
           <Box sx={{ display: "grid", gap: 2, mt: 1 }}>
             <TextField
               label="Ime"
               value={editIme}
-              onChange={(e) => setEditIme(e.target.value)}
+              onChange={(e) => safe.setEditIme(e.target.value)}
               fullWidth
               required
+              disabled={editLoading}
             />
             <TextField
               label="Email"
               type="email"
               value={editEmail}
-              onChange={(e) => setEditEmail(e.target.value)}
+              onChange={(e) => safe.setEditEmail(e.target.value)}
               fullWidth
               required
+              disabled={editLoading}
             />
             <TextField
               select
               label="Uloga"
               value={editRole}
-              onChange={(e) => setEditRole(e.target.value as UserRole)}
+              onChange={(e) => safe.setEditRole(e.target.value as UserRole)}
               fullWidth
-              disabled={editUser?.id === myUserId}
+              disabled={editLoading || editUser?.id === myUserId}
             >
               <MenuItem value="user">user</MenuItem>
               <MenuItem value="admin">admin</MenuItem>
@@ -532,7 +425,7 @@ export default function UsersTable({
           </Box>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setEditOpen(false)} disabled={editLoading}>
+          <Button onClick={() => safe.setEditOpen(false)} disabled={editLoading}>
             Odustani
           </Button>
           <Button variant="contained" onClick={doEdit} disabled={editLoading}>
@@ -541,8 +434,7 @@ export default function UsersTable({
         </DialogActions>
       </Dialog>
 
-      {/* Delete Confirmation Dialog */}
-      <Dialog open={deleteOpen} onClose={() => setDeleteOpen(false)}>
+      <Dialog open={deleteOpen} onClose={() => safe.setDeleteOpen(false)} maxWidth="sm" fullWidth>
         <DialogTitle>Potvrda brisanja</DialogTitle>
         <DialogContent>
           <Typography>
@@ -553,7 +445,7 @@ export default function UsersTable({
           </Typography>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setDeleteOpen(false)} disabled={deleteLoading}>
+          <Button onClick={() => safe.setDeleteOpen(false)} disabled={deleteLoading}>
             Odustani
           </Button>
           <Button color="error" variant="contained" onClick={doDelete} disabled={deleteLoading}>
@@ -561,19 +453,6 @@ export default function UsersTable({
           </Button>
         </DialogActions>
       </Dialog>
-
-      {toast && (
-        <Snackbar
-          open
-          autoHideDuration={2500}
-          onClose={() => setToast(null)}
-          anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
-        >
-          <Alert severity={toast.type} onClose={() => setToast(null)} sx={{ width: "100%" }}>
-            {toast.msg}
-          </Alert>
-        </Snackbar>
-      )}
     </>
   );
 }

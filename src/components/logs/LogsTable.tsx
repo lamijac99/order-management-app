@@ -1,12 +1,12 @@
 "use client";
 
+import * as React from "react";
 import Paper from "@mui/material/Paper";
 import Chip from "@mui/material/Chip";
 import Box from "@mui/material/Box";
-import Typography from "@mui/material/Typography";
-import { DataGrid, GridColDef } from "@mui/x-data-grid";
-import { useMemo } from "react";
+import { DataGrid, type GridColDef } from "@mui/x-data-grid";
 import { useRouter } from "next/navigation";
+
 import type { LogRow } from "@/app/logs/page";
 
 function actionColors(akcija: string) {
@@ -18,52 +18,77 @@ function actionColors(akcija: string) {
   return { label: akcija, bg: "#9e9e9e", color: "#9e9e9e" };
 }
 
+function formatDateOnly(value: unknown) {
+  const s = String(value ?? "");
+  const d = new Date(s);
+  if (Number.isNaN(d.getTime())) {
+    return s.split("T")[0] ?? s;
+  }
+  return d.toLocaleDateString("bs-BA", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
+}
+
 export default function LogsTable({ rows }: { rows: LogRow[] }) {
   const router = useRouter();
 
-  const columns: GridColDef<LogRow>[] = useMemo(() => {
+  const [hydrated, setHydrated] = React.useState(false);
+  React.useEffect(() => setHydrated(true), []);
+
+  const columns: GridColDef<LogRow>[] = React.useMemo(() => {
     return [
       {
         field: "created_at",
-        headerName: "Vrijeme",
-        width: 170,
-        valueFormatter: (v) => String(v).replace("T", " ").replace("Z", ""),
+        headerName: "Datum",
+        width: 140,
+        valueFormatter: (v) => formatDateOnly(v),
       },
+
       {
         field: "akcija",
         headerName: "Akcija",
-        width: 150,
+        width: 160,
         sortable: true,
         renderCell: (params) => {
           const a = String(params.value ?? "");
           const c = actionColors(a);
+
           return (
-            <Chip
-            label={c.label}
-            size="small"
-            sx={{
-              fontWeight: 700,
-              width: 150,
-              justifyContent: "center",
-              bgcolor: `${c.bg}55`,
-              color: c.color,
-              "& .MuiChip-label": {
-                color: c.color,
-                opacity: 1,
-              },
-            }}
-          />
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                height: "100%",
+                width: "100%",
+              }}
+            >
+              <Chip
+                label={c.label}
+                size="small"
+                sx={{
+                  fontWeight: 700,
+                  width: 130,
+                  justifyContent: "center",
+                  bgcolor: `${c.bg}55`,
+                  color: c.color,
+                  "& .MuiChip-label": { color: c.color },
+                }}
+              />
+            </Box>
           );
         },
       },
+
       {
         field: "narudzba_id",
         headerName: "Narudžba",
-        width: 150,
+        width: 130,
         sortable: false,
         renderCell: (params) => {
           const orderId = params.value ? String(params.value) : "";
-
           const orderRef = String((params.row as any)?.narudzba_ref ?? "");
 
           const show = orderRef || orderId;
@@ -73,56 +98,99 @@ export default function LogsTable({ rows }: { rows: LogRow[] }) {
 
           if (!orderId) {
             return (
-              <Typography
-                component="span"
-                title={show}
-                sx={{ fontSize: 13, whiteSpace: "nowrap", opacity: 0.9 }}
-              >
-                {short}
-              </Typography>
+              <Box sx={{ display: "flex", alignItems: "center", height: "100%", width: "100%" }}>
+                <span title={show} style={{ whiteSpace: "nowrap" }}>
+                  {short}
+                </span>
+              </Box>
             );
           }
 
           return (
-            <Typography
-              component="span"
-              title={orderId}
-              sx={{
-                cursor: "pointer",
-                textDecoration: "underline",
-                fontSize: 13,
-                whiteSpace: "nowrap",
-              }}
-              onClick={(e) => {
-                e.stopPropagation();
-                router.push(`/orders/${orderId}`);
-              }}
-            >
-              {short}
-            </Typography>
+            <Box sx={{ display: "flex", alignItems: "center", height: "100%", width: "100%" }}>
+              <span
+                title={orderId}
+                style={{
+                  cursor: "pointer",
+                  textDecoration: "underline",
+                  whiteSpace: "nowrap",
+                }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  router.push(`/orders/${orderId}`);
+                }}
+              >
+                {short}
+              </span>
+            </Box>
           );
         },
       },
+
       {
         field: "kupac",
         headerName: "Kupac",
-        width: 170,
-        renderCell: (params) => <span title={String(params.value ?? "")}>{String(params.value ?? "")}</span>,
+        width: 120,
+        renderCell: (params) => {
+          const v = String(params.value ?? "");
+          return (
+            <Box sx={{ display: "flex", alignItems: "center", height: "100%", width: "100%" }}>
+              <span
+                title={v}
+                style={{
+                  width: "100%",
+                  whiteSpace: "nowrap",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                }}
+              >
+                {v}
+              </span>
+            </Box>
+          );
+        },
       },
+
       {
         field: "opis",
-        headerName: "Opis",
+        headerName: "Sadržaj",
         flex: 1,
-        minWidth: 180,
+        minWidth: 160,
+        renderCell: (params) => {
+          const v = String(params.value ?? "");
+          return (
+            <Box sx={{ display: "flex", alignItems: "center", height: "100%", width: "100%" }}>
+              <span
+                title={v}
+                style={{
+                  width: "100%",
+                  whiteSpace: "nowrap",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                }}
+              >
+                {v}
+              </span>
+            </Box>
+          );
+        },
       },
+
       {
         field: "id",
         headerName: "Log ID",
-        width: 140,
+        width: 120,
         renderCell: (params) => {
           const v = String(params.value ?? "");
           const short = v.length > 12 ? `${v.slice(0, 4)}…${v.slice(-4)}` : v;
-          return <span title={v}>{short}</span>;
+
+          return (
+            <Box sx={{ display: "flex", alignItems: "center", height: "100%", width: "100%" }}>
+              <span title={v} style={{ whiteSpace: "nowrap" }}>
+                {short}
+              </span>
+            </Box>
+          );
         },
       },
     ];
@@ -130,26 +198,24 @@ export default function LogsTable({ rows }: { rows: LogRow[] }) {
 
   return (
     <Paper
-      elevation={3}
+      elevation={0}
+      variant="outlined"
       sx={{
-        p: 2,
-        borderRadius: 2,
         width: "100%",
+        borderRadius: "8px",
         overflow: "hidden",
       }}
     >
-      <Box sx={{ width: "100%", overflowX: "hidden" }}>
+      {!hydrated ? (
+        <Box sx={{ p: 2 }}>Učitavam…</Box>
+      ) : (
         <DataGrid
           rows={rows}
           columns={columns}
           getRowId={(row) => row.id}
           autoHeight
-          hideFooter
-          disableRowSelectionOnClick
-          disableColumnMenu
+          checkboxSelection
           sx={{
-            border: 0,
-            width: "100%",
             "& .MuiDataGrid-cell": {
               whiteSpace: "nowrap",
               overflow: "hidden",
@@ -162,7 +228,7 @@ export default function LogsTable({ rows }: { rows: LogRow[] }) {
             },
           }}
         />
-      </Box>
+      )}
     </Paper>
   );
 }

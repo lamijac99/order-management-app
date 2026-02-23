@@ -94,7 +94,7 @@ export default async function OrderDetailsPage({
         <DeleteOrderButton orderId={data.id} />
       </Box>
 
-      <Paper elevation={3} sx={{ p: 3, borderRadius: 2, mt: 2 }}>
+      <Paper elevation={0} sx={{ p: 3, borderRadius: 2, mt: 2 }}>
         <Box sx={{ display: "flex", gap: 2, alignItems: "center", flexWrap: "wrap", mb: 2 }}>
           <Typography variant="subtitle2" sx={{ opacity: 0.7 }}>
             ID:

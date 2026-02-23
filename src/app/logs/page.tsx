@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import Container from "@mui/material/Container";
 import Typography from "@mui/material/Typography";
 import Box from "@mui/material/Box";
+
 import LogsTable from "@/components/logs/LogsTable";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
@@ -28,7 +29,8 @@ async function getLogs(): Promise<LogRow[]> {
 
   const { data, error } = await supabase
     .from("narudzbe_logovi")
-    .select(`
+    .select(
+      `
       id,
       created_at,
       akcija,
@@ -36,7 +38,8 @@ async function getLogs(): Promise<LogRow[]> {
       narudzba_id,
       narudzba_ref,
       kupac_ref
-    `)
+    `
+    )
     .order("created_at", { ascending: false })
     .limit(500);
 
@@ -66,15 +69,16 @@ export default async function LogsPage() {
 
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
-      <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-        <Typography variant="h4" sx={{ mb: 2 }}>
+      <Box sx={{ mb: 2 }}>
+        <Typography variant="h5" fontWeight={800}>
           Logovi
         </Typography>
-
-        <Box sx={{ width: "100%", maxWidth: 1200 }}>
-          <LogsTable rows={logs} />
-        </Box>
+        <Typography variant="body2" sx={{ opacity: 0.75 }}>
+          Pregled zadnjih promjena u sistemu.
+        </Typography>
       </Box>
+
+      <LogsTable rows={logs} />
     </Container>
   );
 }

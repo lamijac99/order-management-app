@@ -1,9 +1,8 @@
 import { redirect } from "next/navigation";
 import Container from "@mui/material/Container";
-import Typography from "@mui/material/Typography";
-import Box from "@mui/material/Box";
+
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import UsersTable from "@/components/users/UsersTable";
+import UsersClient from "@/app/users/UsersClient";
 
 export const dynamic = "force-dynamic";
 
@@ -44,17 +43,7 @@ export default async function UsersPage() {
 
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
-      <Box sx={{ mb: 2 }}>
-        <Typography variant="h5" fontWeight={800}>
-          Korisnici
-        </Typography>
-        <Typography variant="body2" sx={{ opacity: 0.75 }}>
-          Admin može mijenjati ulogu korisnika (admin/user).
-        </Typography>
-      </Box>
-
-      <UsersTable rows={rows} myUserId={user.id} />
-
+      <UsersClient rows={rows} myUserId={user.id} />
     </Container>
   );
 }

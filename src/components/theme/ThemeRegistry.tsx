@@ -4,16 +4,43 @@ import * as React from "react";
 import { CacheProvider } from "@emotion/react";
 import createCache from "@emotion/cache";
 import { useServerInsertedHTML } from "next/navigation";
-import { ThemeProvider, createTheme } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
+import { CssVarsProvider, extendTheme, type ThemeOptions } from "@mui/material/styles";
 
-const theme = createTheme();
+import { inputsCustomizations } from "@/shared-theme/customizations/inputs";
+import { dataDisplayCustomizations } from "@/shared-theme/customizations/dataDisplay";
+import { feedbackCustomizations } from "@/shared-theme/customizations/feedback";
+import { navigationCustomizations } from "@/shared-theme/customizations/navigation";
+import { surfacesCustomizations } from "@/shared-theme/customizations/surfaces";
+import { dataGridCustomizations } from "@/shared-theme/customizations/dataGrid";
+import { colorSchemes, typography, shadows, shape } from "@/shared-theme/themePrimitives";
 
-export default function ThemeRegistry({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+const extraComponents: ThemeOptions["components"] = {};
+
+const theme = extendTheme({
+  cssVarPrefix: "template",
+  colorSchemeSelector: "data-mui-color-scheme",
+
+  colorSchemes,
+  typography: {
+    ...typography,
+    fontFamily: "var(--font-geist-sans), Inter, sans-serif",
+  },
+  shadows,
+  shape,
+
+  components: {
+    ...inputsCustomizations,
+    ...dataDisplayCustomizations,
+    ...feedbackCustomizations,
+    ...navigationCustomizations,
+    ...surfacesCustomizations,
+    ...dataGridCustomizations,
+    ...extraComponents,
+  },
+});
+
+export default function ThemeRegistry({ children }: { children: React.ReactNode }) {
   const [{ cache, flush }] = React.useState(() => {
     const cache = createCache({ key: "mui" });
     cache.compat = true;
@@ -23,9 +50,7 @@ export default function ThemeRegistry({
 
     cache.insert = (...args: Parameters<typeof prevInsert>) => {
       const serialized = args[1];
-      if (cache.inserted[serialized.name] === undefined) {
-        inserted.push(serialized.name);
-      }
+      if (cache.inserted[serialized.name] === undefined) inserted.push(serialized.name);
       return prevInsert(...args);
     };
 
@@ -43,9 +68,7 @@ export default function ThemeRegistry({
     if (names.length === 0) return null;
 
     let styles = "";
-    for (const name of names) {
-      styles += cache.inserted[name];
-    }
+    for (const name of names) styles += cache.inserted[name];
 
     return (
       <style
@@ -57,10 +80,10 @@ export default function ThemeRegistry({
 
   return (
     <CacheProvider value={cache}>
-      <ThemeProvider theme={theme}>
+      <CssVarsProvider theme={theme} defaultMode="light" disableTransitionOnChange>
         <CssBaseline />
         {children}
-      </ThemeProvider>
+      </CssVarsProvider>
     </CacheProvider>
   );
 }

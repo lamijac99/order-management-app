@@ -3,11 +3,17 @@ import Container from "@mui/material/Container";
 import Typography from "@mui/material/Typography";
 import Box from "@mui/material/Box";
 import Paper from "@mui/material/Paper";
+import Stack from "@mui/material/Stack";
+import Divider from "@mui/material/Divider";
 import Chip from "@mui/material/Chip";
+import { GridLegacy as Grid } from "@mui/material";
+
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import DashboardCharts from "@/components/dashboard/DashboardCharts";
-import TopProducts from "@/components/dashboard/TopProducts";
-import StatusCards from "@/components/dashboard/StatusCards";
+
+import OrdersLineChart from "@/components/dashboard/OrdersLineChart";
+import OrdersHistogramChart from "@/components/dashboard/OrdersHistogramChart";
+import OrdersByStatusChart from "@/components/dashboard/OrdersByStatusChart";
+import TopProductsDonut from "@/components/dashboard/TopProductsDonut";
 
 export const dynamic = "force-dynamic";
 
@@ -33,7 +39,6 @@ function actionChip(akcija: string) {
   return { label: akcija, color: "default" as const };
 }
 
-
 function chipStyle(color?: "error" | "warning" | "success" | "default") {
   switch (color) {
     case "error":
@@ -53,18 +58,24 @@ export default async function DashboardPage() {
   const {
     data: { user },
   } = await supabase.auth.getUser();
+
   if (!user) redirect("/auth/login");
 
+  // ===== COUNTS BY STATUS =====
   const countsEntries = await Promise.all(
     STATUSES.map(async (s) => {
-      const { count } = await supabase.from("narudzbe").select("id", { count: "exact", head: true }).eq("status", s);
+      const { count } = await supabase
+        .from("narudzbe")
+        .select("id", { count: "exact", head: true })
+        .eq("status", s);
+
       return [s, count ?? 0] as const;
     })
   );
 
   const countsByStatus = Object.fromEntries(countsEntries) as Record<OrderStatus, number>;
-  const totalAll = Object.values(countsByStatus).reduce((a, b) => a + b, 0);
 
+  // ===== LAST 200 ORDERS =====
   const { data: last200 } = await supabase
     .from("narudzbe")
     .select(
@@ -92,7 +103,9 @@ export default async function DashboardPage() {
     };
   });
 
+  // ===== TOP PRODUCTS (TOP 5) =====
   const productMap = new Map<string, { naziv: string; count: number; komada: number }>();
+
   for (const o of safeLast200) {
     const key = o.proizvodId || o.proizvodNaziv;
     const prev = productMap.get(key) ?? { naziv: o.proizvodNaziv, count: 0, komada: 0 };
@@ -106,16 +119,17 @@ export default async function DashboardPage() {
 
   const topProducts = Array.from(productMap.values())
     .sort((a, b) => b.count - a.count)
-    .slice(0, 8);
+    .slice(0, 5);
 
+  // ===== HISTOGRAM =====
   const totals = safeLast200.map((x) => x.total);
-
   const EDGES = [0, 100, 250, 500, 1000, 2000, 5000, 10000];
+
   const histogram = Array.from({ length: EDGES.length }, (_, i) => {
     const start = EDGES[i];
     const end = EDGES[i + 1];
-
     const label = end !== undefined ? `${start}–${end}` : `${start}+`;
+
     const count =
       end !== undefined
         ? totals.filter((t) => t >= start && t < end).length
@@ -124,6 +138,7 @@ export default async function DashboardPage() {
     return { label, count };
   });
 
+  // ===== LINE SERIES =====
   const fromDate = new Date();
   fromDate.setDate(fromDate.getDate() - 29);
 
@@ -139,222 +154,170 @@ export default async function DashboardPage() {
     if (dayCounts.has(d)) dayCounts.set(d, (dayCounts.get(d) ?? 0) + 1);
   }
 
-  const lineSeries = Array.from(dayCounts.entries()).map(([date, count]) => ({ date, count }));
+  const lineSeries = Array.from(dayCounts.entries()).map(([date, count]) => ({
+    date,
+    count,
+  }));
 
-  const totalValue30 = totals.reduce((a, b) => a + b, 0);
-  const avgOrder30 = totals.length ? totalValue30 / totals.length : 0;
-
+  // ===== ACTIVITIES (mini, compact) =====
   const { data: logs } = await supabase
     .from("narudzbe_logovi")
     .select(
       `
       id,
       akcija,
-      opis,
       created_at,
       narudzba_id,
-      narudzba_ref,
-      kupac_ref
+      narudzba_ref
     `
     )
     .order("created_at", { ascending: false })
-    .limit(5);
+    .limit(7); // ✅ ograničeno da fino stane uz donut
 
   return (
-    <Container
-      maxWidth={false}
-      sx={{
-        py: { xs: 2, md: 3 },
-        minHeight: "100vh",
-        bgcolor: "#E0F2FE",
-        overflowX: "hidden",
-      }}
-    >
-      <Typography variant="h5" sx={{ mb: 2, textAlign: { xs: "left", sm: "center" } }}>
-        Dashboard
+    <Container maxWidth="lg" sx={{ py: 4 }}>
+      {/* ===== HEADER ===== */}
+      <Box sx={{ mb: 3 }}>
+        <Typography variant="h4" component="h1" sx={{ fontWeight: 800, lineHeight: 1.1 }}>
+          Dashboard
+        </Typography>
+
+        <Typography variant="body1" sx={{ color: "text.secondary", mt: 0.75 }}>
+          Pregled narudžbi – trendovi, statusi i top proizvodi.
+        </Typography>
+      </Box>
+
+      {/* ===== OVERVIEW ===== */}
+      <Typography component="h2" variant="subtitle2" sx={{ mb: 1.5 }}>
+        Overview
       </Typography>
 
-      <Box sx={{ mb: 2, minWidth: 0 }}>
-        <StatusCards totalAll={totalAll} countsByStatus={countsByStatus} />
-      </Box>
+      <Grid container spacing={2} columns={12} sx={{ mb: 2 }}>
+        <Grid item xs={12} md={6}>
+          <OrdersLineChart data={lineSeries} title="Narudžbe po danima" subtitle="Zadnjih 30 dana" />
+        </Grid>
 
-      <Box
-        sx={{
-          display: "grid",
-          gap: 2,
-          gridTemplateColumns: {
-            xs: "1fr",
-            md: "1.2fr 1fr",
-            lg: "420px 1fr 280px",
-          },
-          gridAutoRows: "minmax(220px, auto)",
-          alignItems: "stretch",
-          maxWidth: "100%",
-          minWidth: 0,
-        }}
-      >
-        <Paper
-          sx={{
-            p: 2,
-            borderRadius: 2,
-            display: "flex",
-            flexDirection: "column",
-            bgcolor: "#eeeeee",
-            gridRow: { xs: "auto", md: "1 / span 2" },
-            minHeight: { xs: 260, md: 560 },
-            minWidth: 0,
-            overflow: "hidden",
-          }}
-        >
-          <Typography fontWeight={700} sx={{ mb: 1 }}>
-            Aktivnosti
-          </Typography>
+        <Grid item xs={12} md={6}>
+          <OrdersHistogramChart data={histogram} title="Vrijednost narudžbi" subtitle="Zadnjih 200 narudžbi" />
+        </Grid>
+      </Grid>
 
-          <Box sx={{ display: "flex", flexDirection: "column", gap: 1, overflowY: "auto", flex: 1, minWidth: 0 }}>
-            {(logs ?? []).length === 0 && (
-              <Typography variant="body2" sx={{ opacity: 0.6 }}>
-                Nema aktivnosti
-              </Typography>
-            )}
+      {/* ===== DETAILS ===== */}
+      <Typography component="h2" variant="subtitle2" sx={{ mb: 1.5 }}>
+        Details
+      </Typography>
 
-            {(logs ?? []).map((log: any) => {
-              const akcija = String(log?.akcija ?? "");
-              const chip = actionChip(akcija);
+      <Grid container spacing={2} columns={12} alignItems="stretch">
+        <Grid item xs={12} lg={4}>
+          <TopProductsDonut items={topProducts} title="Top proizvodi" />
+        </Grid>
 
-              const orderId = String(log?.narudzba_id ?? "");
-              const orderRef = String(log?.narudzba_ref ?? "");
-              const kupacRef = String(log?.kupac_ref ?? "");
+        <Grid item xs={12} lg={4}>
+          <OrdersByStatusChart countsByStatus={countsByStatus} title="Status narudžbi" />
+        </Grid>
 
-              const showOrder = orderRef || orderId;
-              const shortOrder =
-                showOrder && showOrder.length > 12 ? `${showOrder.slice(0, 4)}…${showOrder.slice(-4)}` : showOrder;
+        <Grid item xs={12} lg={4}>
+          <Paper
+            variant="outlined"
+            sx={{
+              p: 2,
+              borderRadius: 2,
+              display: "flex",
+              flexDirection: "column",
+              minHeight: 180,
+              bgcolor: "background.paper",
+            }}
+          >
+            <Typography component="h2" variant="subtitle2" sx={{ mb: 1 }}>
+              Aktivnosti
+            </Typography>
 
-              return (
-                <Box key={log.id} sx={{ p: 1, borderRadius: 1, bgcolor: "grey.100", fontSize: 13, minWidth: 0 }}>
+            <Divider sx={{ mb: 1.25 }} />
+
+            <Box
+              sx={{
+                display: "flex",
+                flexDirection: "column",
+                gap: 1,
+                flex: 1,
+                minHeight: 0,
+                overflowY: "auto",
+              }}
+            >
+              {(logs ?? []).length === 0 && (
+                <Typography variant="body2" sx={{ color: "text.secondary" }}>
+                  Nema aktivnosti
+                </Typography>
+              )}
+
+              {(logs ?? []).map((log: any) => {
+                const akcija = String(log?.akcija ?? "");
+                const chip = actionChip(akcija);
+
+                const orderId = String(log?.narudzba_id ?? "");
+                const orderRef = String(log?.narudzba_ref ?? "");
+
+                const showOrder = orderRef || orderId || "-";
+                const shortOrder =
+                  showOrder && showOrder.length > 14 ? `${showOrder.slice(0, 5)}…${showOrder.slice(-5)}` : showOrder;
+
+                return (
                   <Box
+                    key={log.id}
                     sx={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      gap: 1,
-                      flexWrap: "wrap",
-                      minWidth: 0,
+                      p: 1,
+                      borderRadius: 2,
+                      border: "1px solid",
+                      borderColor: "divider",
+                      bgcolor: "background.paper",
                     }}
                   >
-                    <Chip
-                      label={chip.label}
-                      size="small"
+                    <Box
                       sx={{
-                        fontWeight: 700,
-                        width: 150,
-                        justifyContent: "center",
-                        ...chipStyle(chip.color),
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        gap: 1,
+                        flexWrap: "wrap",
                       }}
-                    />
-                    <Typography variant="caption" sx={{ opacity: 0.6 }}>
-                      {new Date(log.created_at).toLocaleString("bs-BA")}
-                    </Typography>
-                  </Box>
+                    >
+                      <Chip
+                        label={chip.label}
+                        size="small"
+                        sx={{
+                          fontWeight: 700,
+                          height: 24,
+                          ...chipStyle(chip.color),
+                        }}
+                      />
 
-                  <Typography variant="body2" sx={{ mt: 0.75, overflowWrap: "anywhere" }}>
-                    {log.opis}
-                  </Typography>
+                      <Typography variant="caption" sx={{ color: "text.secondary" }}>
+                        {log?.created_at ? new Date(log.created_at).toLocaleString("bs-BA") : ""}
+                      </Typography>
+                    </Box>
 
-                  <Box sx={{ display: "flex", gap: 1.25, flexWrap: "wrap", mt: 0.75, minWidth: 0 }}>
-                    <Typography variant="body2" sx={{ overflowWrap: "anywhere" }}>
+                    <Typography variant="body2" sx={{ mt: 0.75 }}>
                       Narudžba:{" "}
-                      {showOrder ? (
-                        orderId ? (
-                          <a
-                            href={`/orders/${orderId}`}
-                            style={{ fontWeight: 800, textDecoration: "underline", color: "inherit" }}
-                          >
-                            {shortOrder}
-                          </a>
-                        ) : (
-                          <b>{shortOrder}</b>
-                        )
+                      {orderId ? (
+                        <a
+                          href={`/orders/${orderId}`}
+                          style={{ fontWeight: 800, textDecoration: "underline", color: "inherit" }}
+                        >
+                          {shortOrder}
+                        </a>
                       ) : (
-                        "-"
+                        <b>{shortOrder}</b>
                       )}
                     </Typography>
-
-                    <Typography variant="body2" sx={{ overflowWrap: "anywhere" }}>
-                      Kupac: <b>{kupacRef || "-"}</b>
-                    </Typography>
                   </Box>
-                </Box>
-              );
-            })}
-          </Box>
-        </Paper>
+                );
+              })}
+            </Box>
 
-        <Paper sx={{ p: 2, borderRadius: 2, minWidth: 0, overflow: "hidden" }}>
-          <Typography fontWeight={700} sx={{ mb: 1 }}>
-            Vrijednost narudžbi
-          </Typography>
-          <Box sx={{ width: "100%", minWidth: 0, overflow: "hidden" }}>
-            <DashboardCharts histogram={histogram} />
-          </Box>
-        </Paper>
-
-        <Paper
-          sx={{
-            p: 2,
-            borderRadius: 2,
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            justifyContent: "center",
-            minWidth: 0,
-            overflow: "hidden",
-          }}
-        >
-          <Typography fontWeight={700} sx={{ mb: 1, textAlign: "center" }}>
-            Top proizvodi (zadnjih 200)
-          </Typography>
-          <Box sx={{ width: "100%", minWidth: 0, overflow: "hidden" }}>
-            <TopProducts items={topProducts} />
-          </Box>
-        </Paper>
-
-        <Paper sx={{ p: 2, borderRadius: 2, minWidth: 0, overflow: "hidden" }}>
-          <Typography fontWeight={700} sx={{ mb: 1 }}>
-            Narudžbe po danima
-          </Typography>
-          <Box sx={{ width: "100%", minWidth: 0, overflow: "hidden" }}>
-            <DashboardCharts line={lineSeries} />
-          </Box>
-        </Paper>
-
-        <Paper
-          sx={{
-            p: 2,
-            borderRadius: 2,
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            justifyContent: "center",
-            minWidth: 0,
-            overflow: "hidden",
-          }}
-        >
-          <Typography fontWeight={700} sx={{ mb: 1, textAlign: "center" }}>
-            Sažetak (30 dana)
-          </Typography>
-          <Box sx={{ display: "grid", gap: 0.5, width: "100%", minWidth: 0 }}>
-            <Typography sx={{ textAlign: "center" }}>
-              Ukupno: <b>{formatKM(totalValue30)}</b>
-            </Typography>
-            <Typography sx={{ textAlign: "center" }}>
-              Prosjek: <b>{formatKM(avgOrder30)}</b>
-            </Typography>
-            <Typography sx={{ textAlign: "center" }}>
-              Broj narudžbi: <b>{totals.length}</b>
-            </Typography>
-          </Box>
-        </Paper>
-      </Box>
+            <Box sx={{ mt: 0.5 }} />
+          </Paper>
+        </Grid>
+      </Grid>
     </Container>
   );
 }

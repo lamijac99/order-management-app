@@ -1,9 +1,8 @@
 import { redirect } from "next/navigation";
 import Container from "@mui/material/Container";
-import Typography from "@mui/material/Typography";
-import Box from "@mui/material/Box";
+
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import ProductsTable from "@/components/products/ProductsTable";
+import ProductsClient from "@/app/products/ProductsClient";
 
 export const dynamic = "force-dynamic";
 
@@ -37,17 +36,7 @@ export default async function ProductsPage() {
 
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
-      <Box sx={{ mb: 2 }}>
-        <Typography variant="h5" fontWeight={800}>
-          Proizvodi
-        </Typography>
-        <Typography variant="body2" sx={{ opacity: 0.75 }}>
-          Upravljanje proizvodima - dodavanje, editovanje i brisanje.
-        </Typography>
-      </Box>
-
-      <ProductsTable rows={rows} />
+      <ProductsClient rows={rows} />
     </Container>
   );
 }
-
