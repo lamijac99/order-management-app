@@ -318,8 +318,8 @@ export default function OrdersTable({ rows, isAdmin }: { rows: OrderRow[]; isAdm
       },
       dateCol,
       { field: "proizvod", headerName: "Proizvod", width: 140 },
-      { field: "kupac", headerName: "Kupac", width: 130 },
-      { field: "kolicina", headerName: "Količina", type: "number", width: 95, align: "left", headerAlign: "left" },
+      { field: "kupac", headerName: "Kupac", width: 140 },
+      { field: "kolicina", headerName: "Količina", type: "number", width: 105, align: "left", headerAlign: "left" },
       ukupnoCol,
       { field: "adresa_isporuke", headerName: "Adresa", flex: 1, minWidth: 160 },
       statusCol,
@@ -432,7 +432,7 @@ export default function OrdersTable({ rows, isAdmin }: { rows: OrderRow[]; isAdm
             columns={columns}
             getRowId={(row) => row.id}
             autoHeight
-            checkboxSelection
+            
             sx={{
               border: 0,
               "& .MuiDataGrid-columnHeaders": { borderBottom: "1px solid", borderColor: "divider" },

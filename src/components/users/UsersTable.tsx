@@ -344,7 +344,7 @@ export default function UsersTable({
             columns={columns}
             getRowId={(row) => row.id}
             autoHeight
-            checkboxSelection
+            
           />
         )}
       </Paper>

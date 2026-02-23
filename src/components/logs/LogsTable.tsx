@@ -214,7 +214,7 @@ export default function LogsTable({ rows }: { rows: LogRow[] }) {
           columns={columns}
           getRowId={(row) => row.id}
           autoHeight
-          checkboxSelection
+          
           sx={{
             "& .MuiDataGrid-cell": {
               whiteSpace: "nowrap",

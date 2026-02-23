@@ -9,13 +9,16 @@ import { listClasses } from "@mui/material/List";
 import { tablePaginationClasses } from "@mui/material/TablePagination";
 import { gridClasses } from "@mui/x-data-grid";
 import { gray } from "../themePrimitives";
+
 export const dataGridCustomizations = {
   MuiDataGrid: {
     defaultProps: {
       disableRowSelectionOnClick: true,
       pageSizeOptions: [10, 20, 50],
-      rowHeight: 36,
+
+      rowHeight: 44,
       columnHeaderHeight: 39,
+
       initialState: {
         pagination: { paginationModel: { pageSize: 20, page: 0 } },
       },
@@ -60,8 +63,8 @@ export const dataGridCustomizations = {
         },
 
         "& .MuiDataGrid-row": {
-          minHeight: 36,
-          maxHeight: 36,
+          minHeight: 44,
+          maxHeight: 44,
           backgroundColor: (theme.vars || theme).palette.background.default,
         },
 
@@ -70,9 +73,11 @@ export const dataGridCustomizations = {
           paddingLeft: 16,
           paddingRight: 16,
 
-          paddingTop: 4,
-          paddingBottom: 4,
-          lineHeight: "18px",
+          paddingTop: 6,
+          paddingBottom: 6,
+          lineHeight: "20px",
+          minHeight: 44,
+
           display: "flex",
           alignItems: "center",
         },
