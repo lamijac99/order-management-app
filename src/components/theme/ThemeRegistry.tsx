@@ -80,7 +80,7 @@ export default function ThemeRegistry({ children }: { children: React.ReactNode 
 
   return (
     <CacheProvider value={cache}>
-      <CssVarsProvider theme={theme} defaultMode="light" disableTransitionOnChange>
+      <CssVarsProvider theme={theme} defaultMode="system" disableTransitionOnChange>
         <CssBaseline />
         {children}
       </CssVarsProvider>
