@@ -221,7 +221,7 @@ export default async function DashboardPage() {
             variant="outlined"
             sx={{
               p: 2,
-              borderRadius: 2,
+              borderRadius: "8px",
               display: "flex",
               flexDirection: "column",
               minHeight: 180,
