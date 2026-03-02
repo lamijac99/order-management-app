@@ -41,7 +41,6 @@ export default function OrdersLineChart({
 
   const chartHeight = 220;
 
-  // template-like labels: "Apr 5"
   const x = React.useMemo(() => {
     return (data ?? []).map((d) => {
       const dt = new Date(d.date);
@@ -52,7 +51,6 @@ export default function OrdersLineChart({
   const y = React.useMemo(() => (data ?? []).map((d) => Number(d.count ?? 0)), [data]);
   const total = React.useMemo(() => y.reduce((a, b) => a + b, 0), [y]);
 
-  // trend: last 7 vs prev 7
   const last7 = React.useMemo(() => y.slice(-7).reduce((a, b) => a + b, 0), [y]);
   const prev7 = React.useMemo(() => y.slice(-14, -7).reduce((a, b) => a + b, 0), [y]);
   const delta = React.useMemo(() => pctChange(prev7, last7), [prev7, last7]);
@@ -66,7 +64,6 @@ export default function OrdersLineChart({
   const lineColor = theme.palette.primary.main;
   const gradId = "ordersLine";
 
-  // template-ish strokes
   const axisStroke = alpha(theme.palette.text.secondary, 0.6);
   const tickStroke = alpha(theme.palette.text.secondary, 0.4);
   const gridStroke = alpha(theme.palette.text.secondary, 0.25);
@@ -119,7 +116,6 @@ export default function OrdersLineChart({
           </Typography>
         </Stack>
 
-        {/* FIX: isti chart box kao histogram */}
         <Box sx={{ mt: 1, height: chartHeight }}>
           <LineChart
             colors={[lineColor]}

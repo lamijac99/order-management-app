@@ -172,7 +172,7 @@ export default async function DashboardPage() {
     `
     )
     .order("created_at", { ascending: false })
-    .limit(7); // ✅ ograničeno da fino stane uz donut
+    .limit(6); 
 
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
