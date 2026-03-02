@@ -43,8 +43,16 @@ export default function OrdersLineChart({
 
   const x = React.useMemo(() => {
     return (data ?? []).map((d) => {
-      const dt = new Date(d.date);
-      return dt.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+      const parts = d.date.split("-");
+      const dt = new Date(
+        Number(parts[0]),
+        Number(parts[1]) - 1,
+        Number(parts[2])
+      );
+      return dt.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+      });
     });
   }, [data]);
 
@@ -121,10 +129,12 @@ export default function OrdersLineChart({
             colors={[lineColor]}
             xAxis={[
               {
-                scaleType: "point",
+                scaleType: "band",
                 data: x,
-                tickInterval: (_index, i) => (i + 1) % 5 === 0,
-                height: 24,
+                tickInterval: (_value, index) => {
+                  const step = Math.ceil(x.length / 6); 
+                  return index % step === 0;
+                },
               },
             ]}
             yAxis={[{ width: 50 }]}
@@ -150,8 +160,10 @@ export default function OrdersLineChart({
                 stroke: gridStroke,
               },
 
-              "& .MuiChartsAxis-tickLabel": { fill: theme.palette.text.secondary },
-              "& .MuiChartsAxis-label": { fill: theme.palette.text.secondary },
+              "& .MuiChartsAxis-root text": {
+  fill: theme.palette.text.secondary,
+  fontSize: 12,
+},
 
               "& .MuiChartsAxis-line": { stroke: axisStroke, strokeWidth: 1 },
               "& .MuiChartsAxis-tick": { stroke: tickStroke },

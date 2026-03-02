@@ -272,29 +272,35 @@ export default async function DashboardPage() {
                       bgcolor: "background.paper",
                     }}
                   >
-                    <Box
-                      sx={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                        gap: 1,
-                        flexWrap: "wrap",
-                      }}
-                    >
-                      <Chip
-                        label={chip.label}
-                        size="small"
-                        sx={{
-                          fontWeight: 700,
-                          height: 24,
-                          ...chipStyle(chip.color),
-                        }}
-                      />
+                  <Box
+  sx={{
+    display: "flex",
+    flexDirection: "column",
+    gap: 0.5,
+  }}
+>
+  <Chip
+    label={chip.label}
+    size="small"
+    sx={{
+      fontWeight: 700,
+      height: 24,
+      alignSelf: "flex-start",
+      ...chipStyle(chip.color),
+    }}
+  />
 
-                      <Typography variant="caption" sx={{ color: "text.secondary" }}>
-                        {log?.created_at ? new Date(log.created_at).toLocaleString("bs-BA") : ""}
-                      </Typography>
-                    </Box>
+  <Typography
+    variant="caption"
+    sx={{
+      color: "text.secondary",
+      alignSelf: "flex-start",
+      lineHeight: 1.2,
+    }}
+  >
+    {log?.created_at ? new Date(log.created_at).toLocaleString("bs-BA") : ""}
+  </Typography>
+</Box>
 
                     <Typography variant="body2" sx={{ mt: 0.75 }}>
                       Narudžba:{" "}
