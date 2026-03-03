@@ -101,6 +101,7 @@ export default function OrdersHistogramChart({
 
         <Box sx={{ mt: 1, height: chartHeight }}>
           <BarChart
+          
             height={chartHeight}
             margin={{ left: 0, right: 20, top: 20, bottom: 0 }}
             xAxis={[
@@ -108,6 +109,8 @@ export default function OrdersHistogramChart({
                 scaleType: "band",
                 data: labels,
                 tickLabelStyle: { fontSize: 12 },
+                categoryGapRatio: 0.35,
+                barGapRatio: 0.4,
               },
             ]}
             yAxis={[
