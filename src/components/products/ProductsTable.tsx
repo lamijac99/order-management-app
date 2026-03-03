@@ -177,7 +177,8 @@ export default function ProductsTable({ rows }: { rows: ProductRow[] }) {
         {!hydrated ? (
           <Box sx={{ p: 2 }}>Učitavam…</Box>
         ) : (
-          <DataGrid rows={rows} columns={columns} autoHeight  />
+          <DataGrid           density="compact"
+          rows={rows} columns={columns} autoHeight  />
         )}
       </Paper>
 

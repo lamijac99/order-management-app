@@ -428,6 +428,7 @@ export default function OrdersTable({ rows, isAdmin }: { rows: OrderRow[]; isAdm
           <Box sx={{ p: 2 }}>Učitavam…</Box>
         ) : (
           <DataGrid
+          density="compact"
             rows={localRows}
             columns={columns}
             getRowId={(row) => row.id}

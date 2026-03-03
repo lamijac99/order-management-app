@@ -210,6 +210,8 @@ export default function LogsTable({ rows }: { rows: LogRow[] }) {
         <Box sx={{ p: 2 }}>Učitavam…</Box>
       ) : (
         <DataGrid
+        density="compact"
+
           rows={rows}
           columns={columns}
           getRowId={(row) => row.id}

@@ -340,6 +340,8 @@ export default function UsersTable({
           <Box sx={{ p: 2 }}>Učitavam…</Box>
         ) : (
           <DataGrid
+          density="compact"
+
             rows={localRows}
             columns={columns}
             getRowId={(row) => row.id}

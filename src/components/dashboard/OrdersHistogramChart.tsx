@@ -152,7 +152,7 @@ export default function OrdersHistogramChart({
                * Ne koristi rx/ry jer oni zaobljuju i dole.
                */
               "& .MuiBarElement-root, & .MuiChartsBar-root": {
-                clipPath: "inset(0 round 10px 10px 0px 0px)",
+                clipPath: `inset(0 round ${theme.shape.borderRadius}px ${theme.shape.borderRadius}px 0 0)`,
                 filter: `drop-shadow(0px 1px 0px ${alpha(
                   theme.palette.common.black,
                   0.06
