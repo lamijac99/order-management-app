@@ -47,9 +47,19 @@ export default function OrdersHistogramChart({
 
   const barColor = theme.palette.primary.main;
 
-  const axisStroke = alpha(theme.palette.text.secondary, 0.3);
-  const tickStroke = alpha(theme.palette.text.secondary, 0.3);
-  const gridStroke = alpha(theme.palette.text.secondary, 0.3);
+  const isDark = theme.palette.mode === "dark";
+
+  const axisStroke = theme.vars
+    ? `rgba(${theme.vars.palette.text.secondaryChannel} / ${isDark ? 0.5 : 0.4})`
+    : alpha(theme.palette.text.secondary, isDark ? 0.5 : 0.4);
+  
+  const tickStroke = theme.vars
+    ? `rgba(${theme.vars.palette.text.secondaryChannel} / ${isDark ? 0.5 : 0.4})`
+    : alpha(theme.palette.text.secondary, isDark ? 0.5 : 0.4);
+  
+  const gridStroke = theme.vars
+    ? `rgba(${theme.vars.palette.text.secondaryChannel} / ${isDark ? 0.35 : 0.25})`
+    : alpha(theme.palette.text.secondary, isDark ? 0.35 : 0.25);
 
   return (
     <Card
