@@ -44,15 +44,8 @@ export default function OrdersLineChart({
   const x = React.useMemo(() => {
     return (data ?? []).map((d) => {
       const parts = d.date.split("-");
-      const dt = new Date(
-        Number(parts[0]),
-        Number(parts[1]) - 1,
-        Number(parts[2])
-      );
-      return dt.toLocaleDateString("en-US", {
-        month: "short",
-        day: "numeric",
-      });
+      const dt = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+      return dt.toLocaleDateString("en-US", { month: "short", day: "numeric" });
     });
   }, [data]);
 
@@ -72,9 +65,9 @@ export default function OrdersLineChart({
   const lineColor = theme.palette.primary.main;
   const gradId = "ordersLine";
 
-  const axisStroke = alpha(theme.palette.text.secondary, 0.6);
+  const axisStroke = alpha(theme.palette.text.secondary, 0.4);
   const tickStroke = alpha(theme.palette.text.secondary, 0.4);
-  const gridStroke = alpha(theme.palette.text.secondary, 0.25);
+  const gridStroke = alpha(theme.palette.text.secondary, 0.4);
 
   return (
     <Card
@@ -131,13 +124,19 @@ export default function OrdersLineChart({
               {
                 scaleType: "band",
                 data: x,
-                tickInterval: (_value, index) => {
-                  const step = Math.ceil(x.length / 6); 
+                tickLabelStyle: { fontSize: 12 }, 
+                tickInterval: (_value: string, index: number) => {
+                  const step = Math.ceil(x.length / 6);
                   return index % step === 0;
                 },
-              },
+              } as any,
             ]}
-            yAxis={[{ width: 50 }]}
+            yAxis={[
+              {
+                width: 50,
+                tickLabelStyle: { fontSize: 12 },  
+              } as any,
+            ]}
             series={[
               {
                 id: "orders",
@@ -160,13 +159,21 @@ export default function OrdersLineChart({
                 stroke: gridStroke,
               },
 
-              "& .MuiChartsAxis-root text": {
-  fill: theme.palette.text.secondary,
-  fontSize: 12,
-},
+              "& .MuiChartsAxis-tickLabel": {
+                fill: theme.palette.text.secondary,
+                whiteSpace: "nowrap",
+              },
+              "& .MuiChartsAxis-label": {
+                fill: theme.palette.text.secondary,
+              },
 
-              "& .MuiChartsAxis-line": { stroke: axisStroke, strokeWidth: 1 },
-              "& .MuiChartsAxis-tick": { stroke: tickStroke },
+              "& .MuiChartsAxis-line": {
+                stroke: axisStroke,
+                strokeWidth: 1,
+              },
+              "& .MuiChartsAxis-tick": {
+                stroke: tickStroke,
+              },
             }}
           >
             <AreaGradient color={theme.palette.primary.main} id={gradId} />

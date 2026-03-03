@@ -47,9 +47,9 @@ export default function OrdersHistogramChart({
 
   const barColor = theme.palette.primary.main;
 
-  const axisStroke = alpha(theme.palette.text.secondary, 0.6);
+  const axisStroke = alpha(theme.palette.text.secondary, 0.4);
   const tickStroke = alpha(theme.palette.text.secondary, 0.4);
-  const gridStroke = alpha(theme.palette.text.secondary, 0.25);
+  const gridStroke = alpha(theme.palette.text.secondary, 0.4);
 
   return (
     <Card
@@ -150,10 +150,7 @@ export default function OrdersHistogramChart({
                 stroke: tickStroke,
               },
 
-              /**
-               * ✅ ONLY TOP ROUNDED
-               * Ne koristi rx/ry jer oni zaobljuju i dole.
-               */
+             
               "& .MuiBarElement-root, & .MuiChartsBar-root": {
                 clipPath: `inset(0 round ${theme.shape.borderRadius}px ${theme.shape.borderRadius}px 0 0)`,
                 filter: `drop-shadow(0px 1px 0px ${alpha(
