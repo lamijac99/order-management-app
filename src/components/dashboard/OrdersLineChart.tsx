@@ -65,9 +65,9 @@ export default function OrdersLineChart({
   const lineColor = theme.palette.primary.main;
   const gradId = "ordersLine";
 
-  const axisStroke = alpha(theme.palette.text.secondary, 0.4);
-  const tickStroke = alpha(theme.palette.text.secondary, 0.4);
-  const gridStroke = alpha(theme.palette.text.secondary, 0.4);
+  const axisStroke = alpha(theme.palette.text.secondary, 0.3);
+  const tickStroke = alpha(theme.palette.text.secondary, 0.3);
+  const gridStroke = alpha(theme.palette.text.secondary, 0.3);
 
   return (
     <Card
