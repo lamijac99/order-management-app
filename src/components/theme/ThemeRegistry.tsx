@@ -14,7 +14,7 @@ import { navigationCustomizations } from "@/shared-theme/customizations/navigati
 import { surfacesCustomizations } from "@/shared-theme/customizations/surfaces";
 import { dataGridCustomizations } from "@/shared-theme/customizations/dataGrid";
 import { colorSchemes, typography, shadows, shape } from "@/shared-theme/themePrimitives";
-
+import { chartsCustomizations } from "@/shared-theme/customizations/charts";
 const extraComponents: ThemeOptions["components"] = {};
 
 const theme = extendTheme({
@@ -36,6 +36,7 @@ const theme = extendTheme({
     ...navigationCustomizations,
     ...surfacesCustomizations,
     ...dataGridCustomizations,
+    ...chartsCustomizations,
     ...extraComponents,
   },
 });

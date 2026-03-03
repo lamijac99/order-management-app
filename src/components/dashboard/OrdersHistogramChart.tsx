@@ -35,8 +35,14 @@ export default function OrdersHistogramChart({
   const total = React.useMemo(() => counts.reduce((a, b) => a + b, 0), [counts]);
 
   const half = Math.floor(counts.length / 2);
-  const prev = React.useMemo(() => counts.slice(0, half).reduce((a, b) => a + b, 0), [counts, half]);
-  const cur = React.useMemo(() => counts.slice(half).reduce((a, b) => a + b, 0), [counts, half]);
+  const prev = React.useMemo(
+    () => counts.slice(0, half).reduce((a, b) => a + b, 0),
+    [counts, half]
+  );
+  const cur = React.useMemo(
+    () => counts.slice(half).reduce((a, b) => a + b, 0),
+    [counts, half]
+  );
 
   const delta = React.useMemo(() => pctChange(prev, cur), [prev, cur]);
   const trendUp = delta >= 0;
@@ -47,20 +53,6 @@ export default function OrdersHistogramChart({
 
   const barColor = theme.palette.primary.main;
 
-  const isDark = theme.palette.mode === "dark";
-
-  const axisStroke = theme.vars
-    ? `rgba(${theme.vars.palette.text.secondaryChannel} / ${isDark ? 0.5 : 0.4})`
-    : alpha(theme.palette.text.secondary, isDark ? 0.5 : 0.4);
-  
-  const tickStroke = theme.vars
-    ? `rgba(${theme.vars.palette.text.secondaryChannel} / ${isDark ? 0.5 : 0.4})`
-    : alpha(theme.palette.text.secondary, isDark ? 0.5 : 0.4);
-  
-  const gridStroke = theme.vars
-    ? `rgba(${theme.vars.palette.text.secondaryChannel} / ${isDark ? 0.35 : 0.25})`
-    : alpha(theme.palette.text.secondary, isDark ? 0.35 : 0.25);
-
   return (
     <Card
       variant="outlined"
@@ -69,7 +61,7 @@ export default function OrdersHistogramChart({
         height: "100%",
         display: "flex",
         flexDirection: "column",
-        bgcolor: "#fff",
+        bgcolor: "#fff", // ne diram
       }}
     >
       <CardContent sx={{ display: "flex", flexDirection: "column", flex: 1 }}>
@@ -111,7 +103,6 @@ export default function OrdersHistogramChart({
 
         <Box sx={{ mt: 1, height: chartHeight }}>
           <BarChart
-          
             height={chartHeight}
             margin={{ left: 0, right: 20, top: 20, bottom: 0 }}
             xAxis={[
@@ -139,34 +130,10 @@ export default function OrdersHistogramChart({
             grid={{ horizontal: true }}
             hideLegend
             sx={{
-              "& .MuiChartsGrid-line": {
-                strokeDasharray: "4 4",
-                stroke: gridStroke,
-              },
-
-              "& .MuiChartsAxis-tickLabel": {
-                fill: theme.palette.text.secondary,
-                whiteSpace: "nowrap",
-              },
-              "& .MuiChartsAxis-label": {
-                fill: theme.palette.text.secondary,
-              },
-
-              "& .MuiChartsAxis-line": {
-                stroke: axisStroke,
-                strokeWidth: 1,
-              },
-              "& .MuiChartsAxis-tick": {
-                stroke: tickStroke,
-              },
-
-             
+              // ostavljamo samo stilove koji su specifični za histogram/barove
               "& .MuiBarElement-root, & .MuiChartsBar-root": {
                 clipPath: `inset(0 round ${theme.shape.borderRadius}px ${theme.shape.borderRadius}px 0 0)`,
-                filter: `drop-shadow(0px 1px 0px ${alpha(
-                  theme.palette.common.black,
-                  0.06
-                )})`,
+                filter: `drop-shadow(0px 1px 0px ${alpha(theme.palette.common.black, 0.06)})`,
               },
             }}
           />

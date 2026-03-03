@@ -65,29 +65,15 @@ export default function OrdersLineChart({
   const lineColor = theme.palette.primary.main;
   const gradId = "ordersLine";
 
-  const isDark = theme.palette.mode === "dark";
-
-  const axisStroke = theme.vars
-    ? `rgba(${theme.vars.palette.text.secondaryChannel} / ${isDark ? 0.5 : 0.4})`
-    : alpha(theme.palette.text.secondary, isDark ? 0.5 : 0.4);
-  
-  const tickStroke = theme.vars
-    ? `rgba(${theme.vars.palette.text.secondaryChannel} / ${isDark ? 0.5 : 0.4})`
-    : alpha(theme.palette.text.secondary, isDark ? 0.5 : 0.4);
-  
-  const gridStroke = theme.vars
-    ? `rgba(${theme.vars.palette.text.secondaryChannel} / ${isDark ? 0.35 : 0.25})`
-    : alpha(theme.palette.text.secondary, isDark ? 0.35 : 0.25);
-
   return (
     <Card
       variant="outlined"
       sx={{
         width: "100%",
-        bgcolor: "#fff",
         height: "100%",
         display: "flex",
         flexDirection: "column",
+        bgcolor: "background.#fff", // ne diram
       }}
     >
       <CardContent sx={{ display: "flex", flexDirection: "column", flex: 1 }}>
@@ -134,9 +120,11 @@ export default function OrdersLineChart({
               {
                 scaleType: "band",
                 data: x,
-                tickLabelStyle: { fontSize: 12 }, 
+                tickLabelStyle: { fontSize: 12 },
                 tickInterval: (_value: string, index: number) => {
+                  const last = x.length - 1;
                   if (index === 0) return false;
+                  if (index === last) return true;
                   const step = Math.ceil(x.length / 6);
                   return index % step === 0;
                 },
@@ -145,7 +133,7 @@ export default function OrdersLineChart({
             yAxis={[
               {
                 width: 50,
-                tickLabelStyle: { fontSize: 12 },  
+                tickLabelStyle: { fontSize: 12 },
               } as any,
             ]}
             series={[
@@ -159,32 +147,12 @@ export default function OrdersLineChart({
               },
             ]}
             height={chartHeight}
-            margin={{ left: 0, right: 20, top: 20, bottom: 0 }}
+            margin={{ left: 0, right: 28, top: 20, bottom: 0 }}
             grid={{ horizontal: true }}
             hideLegend
             sx={{
+              // ostavljamo samo ono što je specifično za ovaj chart
               "& .MuiAreaElement-series-orders": { fill: `url('#${gradId}')` },
-
-              "& .MuiChartsGrid-line": {
-                strokeDasharray: "4 4",
-                stroke: gridStroke,
-              },
-
-              "& .MuiChartsAxis-tickLabel": {
-                fill: theme.palette.text.secondary,
-                whiteSpace: "nowrap",
-              },
-              "& .MuiChartsAxis-label": {
-                fill: theme.palette.text.secondary,
-              },
-
-              "& .MuiChartsAxis-line": {
-                stroke: axisStroke,
-                strokeWidth: 1,
-              },
-              "& .MuiChartsAxis-tick": {
-                stroke: tickStroke,
-              },
             }}
           >
             <AreaGradient color={theme.palette.primary.main} id={gradId} />
