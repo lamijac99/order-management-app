@@ -126,6 +126,7 @@ export default function OrdersLineChart({
                 data: x,
                 tickLabelStyle: { fontSize: 12 }, 
                 tickInterval: (_value: string, index: number) => {
+                  if (index === 0) return false;
                   const step = Math.ceil(x.length / 6);
                   return index % step === 0;
                 },
